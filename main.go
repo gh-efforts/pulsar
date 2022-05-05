@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 
+	"github.com/bitrainforest/pulsar/commands"
+
 	"github.com/urfave/cli/v2"
 
 	"log"
@@ -23,7 +25,7 @@ func main() {
 	}()
 
 	app := &cli.App{
-		Commands: []*cli.Command{},
+		Commands: []*cli.Command{commands.DaemonCmd, commands.InitCmd},
 	}
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Fatal(err)
