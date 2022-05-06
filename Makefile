@@ -58,7 +58,7 @@ endif
 GOFLAGS+=-ldflags="$(ldflags)"
 
 .PHONY: build
-build: deps bony
+build: deps pulsar
 
 .PHONY: deps
 deps: $(BUILD_DEPS)
@@ -89,11 +89,11 @@ testfull: build
 testshort:
 	go test -short ./... -v
 
-.PHONY: bony
-bony:
-	rm -f bony
-	go build $(GOFLAGS) -o bony -mod=readonly .
-BINS+=bony
+.PHONY: pulsar
+pulsar:
+	rm -f pulsar
+	go build $(GOFLAGS) -o pulsar -mod=readonly .
+BINS+=pulsar
 
 .PHONY: clean
 clean:
@@ -117,11 +117,6 @@ $(toolspath)/bin/golangci-lint: $(toolspath)/go.mod
 $(toolspath)/bin/gen: $(toolspath)/go.mod
 	@mkdir -p $(dir $@)
 	(cd $(toolspath); go build -tags tools -o $(@:$(toolspath)/%=%) github.com/filecoin-project/statediff/types/gen)
-
-
-.PHONY: lint
-lint: $(toolspath)/bin/golangci-lint
-	$(toolspath)/bin/golangci-lint run ./...
 
 .PHONY: actors-gen
 actors-gen:

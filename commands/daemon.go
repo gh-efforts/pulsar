@@ -56,7 +56,7 @@ var repoFlag = &cli.StringFlag{
 	Name:    "repo",
 	Usage:   "Specify path where bony should store chain state.",
 	EnvVars: []string{"BONY_REPO"},
-	Value:   "~/.bony",
+	Value:   "~/.pulsar",
 }
 
 // clientAPIFlagSet are used by commands that act as clients of a daemon's API
@@ -148,10 +148,6 @@ var DaemonCmd = &cli.Command{
 			if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 				return xerrors.Errorf("fetching proof parameters: %w", err)
 			}
-		}
-
-		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-			return xerrors.Errorf("fetching proof parameters: %w", err)
 		}
 
 		var genBytes []byte
