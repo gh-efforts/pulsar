@@ -196,6 +196,7 @@ var DaemonCmd = &cli.Command{
 			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Base(),
 			node.Repo(r),
+			node.Override(new(*stmgr.StateManager), modules.StateManager),
 			node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
 			// End custom StateManager injection.
 			genesis,

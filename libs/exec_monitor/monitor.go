@@ -2,6 +2,7 @@ package exec_monitor
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/filecoin-project/go-address"
@@ -60,6 +61,8 @@ type BufferedExecution struct {
 }
 
 func (b *BufferedExecMonitor) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
+	fmt.Println("new message cid:", mcid)
+	// todo handle message
 	execution := &BufferedExecution{
 		TipSet:   ts,
 		Mcid:     mcid,
