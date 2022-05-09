@@ -1,0 +1,95 @@
+version: '3'
+
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+services:
+  etcd:
+    build:
+      context: ./run/etcd
+      args:
+        - ETCD_VERSION=${ETCD_VERSION}
+    environment:
+      ETCD_NAME: "etcd"
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: "http://etcd:2380"
+      ETCD_LISTEN_PEER_URLS: "http://0.0.0.0:2380"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+      ETCD_INITIAL_CLUSTER: "etcd=http://etcd:2380"
+      ETCDCTL_API: "3"
+      ETCD_DATA_DIR: "/etcd-data"
+    volumes:
+      - ${DATA_PATH_HOST}/etcd:/etcd-data
+    ports:
+      - "${ETCD_PORT}:2379"
+    networks:
+      - backend
+
+  etcd-init:
+    build:
+      context: ./run/etcd-init
+      args:
+        - ETCD_VERSION=${ETCD_VERSION}
+    depends_on:
+      - etcd
+    restart: "no"
+    volumes:
+      - ./run/etcd-init/entry.sh:/var/etcd/entry.sh
+      - ./run/etcd-init/entry:/var/etcd/entry
+    networks:
+      - backend
+    command: "sh /var/etcd/entry.sh"
+
+  ### ETCDKEEPER ########################################
+  etcdkeeper:
+    image: deltaprojects/etcdkeeper
+    depends_on:
+      - etcd
+    environment:
+      HOST: "0.0.0.0"
+    ports:
+      - "${ETCD_KEEPER_PORT}:8080"
+    networks:
+      - backend
+
+
+  mongodb:
+    image: mongo:${MONGODB_VERSION}
+    container_name: nuwas_mongodb
+    #  restart: always
+    ports:
+      - "${MONGODB_PORT}:27017"
+    volumes:
+      - ${DATA_PATH_HOST}/mongodb/data/db:/data/db
+      - ${DATA_PATH_HOST}/mongodb/data/configdb:/data/configdb
+    networks:
+      - backend
+
+  redis:
+    build: ./run/redis
+    volumes:
+      - ${DATA_PATH_HOST}/redis:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - backend
+
+  pulsar:
+    build:
+      context: ./run/srv
+    environment:
+      CONFIG_ETCD: "etcd://etcd:2379"
+      BUILD_MAIN_FILE: "cmd/main.go"
+    volumes:
+      - ${PULSAR_PATH}:/app
+    ports:
+      - "19000:8088"
+      - "18012:9120"
+      - "18015:2345"
+    depends_on:
+      - etcd
+      - redis
+      - mongodb
+    networks:
+      - backend

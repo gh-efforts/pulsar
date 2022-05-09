@@ -77,11 +77,6 @@ type daemonOpts struct {
 
 var daemonFlags daemonOpts
 
-var cacheFlags struct {
-	BlockstoreCacheSize uint // number of raw blocks to cache in memory
-	StatestoreCacheSize uint // number of decoded actor states to cache in memory
-}
-
 var DaemonCmd = &cli.Command{
 	Name:        "daemon",
 	Usage:       "Start a bony daemon process.",
@@ -145,7 +140,7 @@ var DaemonCmd = &cli.Command{
 		}
 
 		if !isLite {
-			if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
+			if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 				return xerrors.Errorf("fetching proof parameters: %w", err)
 			}
 		}

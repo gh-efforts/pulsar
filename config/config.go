@@ -180,7 +180,7 @@ func FromFile(path string) (*Conf, error) {
 		return nil, err
 	}
 
-	defer file.Close() //nolint:errcheck // The file is RO
+	defer file.Close() // nolint:errcheck // The file is RO
 	return FromReader(file, DefaultConf())
 }
 

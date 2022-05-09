@@ -61,7 +61,7 @@ type BufferedExecution struct {
 }
 
 func (b *BufferedExecMonitor) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
-	fmt.Println("new message cid:", mcid)
+	fmt.Println("新消息:", mcid)
 	// todo handle message
 	execution := &BufferedExecution{
 		TipSet:   ts,

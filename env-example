@@ -1,0 +1,27 @@
+# local path
+DATA_PATH_HOST=~/.pulsar/data
+# NetWorks driver
+# see: https://docs.docker.com/compose/compose-file/compose-file-v3/#network-configuration-reference
+NETWORKS_DRIVER=bridge
+### common #################################################
+TIMEZONE=Asia/Shanghai
+### Redis  #######################################################
+
+REDIS_PORT=6379
+### MongoDB  #######################################################
+MONGODB_VERSION=latest
+MONGODB_PORT=27017
+MONGO_INITDB_ROOT_USERNAME=root
+MONGO_INITDB_ROOT_PASSWORD=root
+MONGO_INITDB_DATABASE=v1_pulsar
+MONGO_INITDB_USERNAME=pulsar
+MONGO_INITDB_PASSWORD=pulsar
+
+### ETCD  #######################################################
+ETCD_VERSION="v3.4.15"
+ETCD_PORT=2379
+### nuwas  #######################################################
+
+PULSAR_PATH=~/work/company/pulsar
+
+ETCD_KEEPER_PORT=11001
