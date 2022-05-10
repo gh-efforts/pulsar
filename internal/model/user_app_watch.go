@@ -10,6 +10,11 @@ type UserAppWatch struct {
 	State      int8   `bson:"state"`
 }
 
+type SpecialUserAppWatch struct {
+	AppId   string `bson:"app_id"`
+	Address string `bson:"address"`
+}
+
 func NewDefaultAppWatch() UserAppWatch {
 	now := time.Now().Unix()
 	return UserAppWatch{

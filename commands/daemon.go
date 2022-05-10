@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/bitrainforest/filmeta-hic/core/assert"
+
+	"github.com/bitrainforest/pulsar/internal/service/subscriber"
+
 	metricsprometheus "github.com/ipfs/go-metrics-prometheus"
 
 	"github.com/filecoin-project/go-jsonrpc"
@@ -160,7 +164,7 @@ var DaemonCmd = &cli.Command{
 			genesis = node.Override(new(lotusmodules.Genesis), lotusmodules.LoadGenesis(genBytes))
 		}
 
-		isBootstrapper := false
+		//isBootstrapper := false
 		shutdown := make(chan struct{})
 		liteModeDeps := node.Options()
 
@@ -183,16 +187,23 @@ var DaemonCmd = &cli.Command{
 
 		var api api.FullNode
 
+		//todo
+		ownExecMonitor, err := subscriber.NewCore("")
+		assert.CheckErr(err)
+
 		stop, err := node.New(ctx,
 			// Start Sentinel Dep injection
 			node.FullAPI(&api, node.Lite(isLite)),
 
-			node.Override(new(dtypes.Bootstrapper), isBootstrapper),
+			//node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 			node.Override(new(dtypes.ShutdownChan), shutdown),
 			node.Base(),
 			node.Repo(r),
 			node.Override(new(*stmgr.StateManager), modules.StateManager),
-			node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
+			// replace with our own exec monitor
+			//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
+			node.Override(new(stmgr.ExecMonitor), ownExecMonitor),
+
 			// End custom StateManager injection.
 			genesis,
 			liteModeDeps,

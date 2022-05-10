@@ -40,6 +40,24 @@ func (appWatch UserAppWatchDaoImpl) FindByAddress(ctx context.Context,
 	return
 }
 
+func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
+	address []string) (list []*model.SpecialUserAppWatch, err error) {
+	filter := bson.M{"address": bson.M{"$in": address}}
+	cur, err := appWatch.GetCollection().Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	for cur.Next(ctx) {
+		var appWatch model.SpecialUserAppWatch
+		err := cur.Decode(&appWatch)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, &appWatch)
+	}
+	return
+}
+
 func (appWatch UserAppWatchDaoImpl) Create(ctx context.Context,
 	appWatchModel *model.UserAppWatch) (err error) {
 	_, err = appWatch.GetCollection().InsertOne(ctx, appWatchModel)

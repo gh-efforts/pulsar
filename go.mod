@@ -272,6 +272,9 @@ require (
 	github.com/multiformats/go-multihash v0.1.0 // indirect
 	github.com/multiformats/go-multistream v0.2.2 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/nats-io/nats.go v1.15.0 // indirect
+	github.com/nats-io/nkeys v0.3.0 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nikkolasg/hexjson v0.0.0-20181101101858-78e39397e00c // indirect
 	github.com/nkovacs/streamquote v1.0.0 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
