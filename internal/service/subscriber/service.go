@@ -23,6 +23,7 @@ type (
 		opts      *Opts
 		connect   *nats.Conn
 		msgBuffer chan *model.Trading
+		lock      sync.Mutex
 	}
 )
 
@@ -44,7 +45,7 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 		opts.msgBuffer = MaxMsgBuffer
 	}
 
-	core := &Core{opts: &opts}
+	core := &Core{opts: &opts, lock: sync.Mutex{}}
 	core.msgBuffer = make(chan *model.Trading, opts.msgBuffer)
 	connect, err := nats.Connect(uri)
 	if err != nil {
@@ -114,6 +115,8 @@ func (core *Core) processing() {
 }
 
 func (core *Core) Stop() {
+	core.lock.Lock()
+	defer core.lock.Unlock()
 	if core.connect.IsClosed() {
 		return
 	}
