@@ -8,5 +8,6 @@ echo "start put key to ${PROJECT_NAME}"
 
 etcdctl put /${PROJECT_NAME}/data/mongo/uri "mongodb://mongodb:27017/"
 etcdctl put /${PROJECT_NAME}/data/redis '{"addr":"redis:6379", "db":0, "password":"","userName":""}'
+etcdctl put /${PROJECT_NAME}/data/jwt/secret "test"
 
 echo "finish etcd-init"
