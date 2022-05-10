@@ -2,6 +2,11 @@ package middleware
 
 import (
 	"errors"
+
+	"github.com/bitrainforest/filmeta-hic/core/assert"
+
+	"github.com/go-kratos/kratos/v2/config"
+
 	"net/http"
 	"time"
 
@@ -14,11 +19,11 @@ import (
 )
 
 const (
-	secret     = ""
 	TimeFormat = "2006-01-02 15:04:05"
 )
 
 var (
+	secret                string
 	identityKey           = "appId"
 	ErrMissApplyInfoErr   = errors.New("the appId or appSecret parameter is missing")
 	ErrFailedApplyInfoErr = errors.New("appId or appSecret illegal parameters")
@@ -33,6 +38,17 @@ type (
 		appService service.UserAppService
 	}
 )
+
+func MustLoadSecret(conf config.Config) {
+	var (
+		err error
+	)
+	v := conf.Value("data.jwt.secret")
+	secret, err = v.String()
+	if err != nil {
+		assert.CheckErr(err)
+	}
+}
 
 func NewJWTMiddleware(appService service.UserAppService) *JWTMiddleware {
 	return &JWTMiddleware{appService: appService}

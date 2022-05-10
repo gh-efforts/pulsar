@@ -3,6 +3,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/bitrainforest/pulsar/api/middleware"
+
 	"github.com/bitrainforest/pulsar/api/router"
 
 	"github.com/bitrainforest/filmeta-hic/core/httpservice"
@@ -54,6 +56,7 @@ var PulsarCommand = &cli.Command{
 			assert.CheckErr(err)
 		}
 
+		// must init mongo
 		store.MustLoadMongoDB(conf, func(cfg kconf.Config) (*mongox2.Conf, error) {
 			v := cfg.Value("data.mongo.uri")
 			mongoUri, err := v.String()
@@ -65,6 +68,9 @@ var PulsarCommand = &cli.Command{
 			}
 			return &mongox2.Conf{Uri: mongoUri}, nil
 		})
+		// load jwt.secret
+		middleware.MustLoadSecret(conf)
+
 		// log
 		log.SetUp(ServiceName)
 		// mustLoadRedis
