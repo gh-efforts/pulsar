@@ -328,4 +328,19 @@ lint: checklint
 deps: $(BUILD_DEPS)
 
 
+.PHONY: generate
+# generate
+generate:
+	go mod tidy
+	go get github.com/google/wire/cmd/wire@latest
+	go generate ./...
+
+checkwire:
+ifeq (,$(shell which wire))
+	@echo 'error: wire is not installed, please refer to the following instructions https://github.com/google/wire#installing'
+endif
+
+wire:checkwire
+	cd ${PWD}/internal && wire
+
 
