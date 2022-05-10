@@ -115,7 +115,7 @@ var DaemonCmd = &cli.Command{
 
 		r, err := repo.NewFS(repoPath)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err)
+			return xerrors.Errorf("opening fs repo: %w", err) //nolint
 		}
 
 		if daemonFlags.config == "" {
@@ -136,12 +136,12 @@ var DaemonCmd = &cli.Command{
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
-			return xerrors.Errorf("repo init error: %w", err)
+			return xerrors.Errorf("repo init error: %w", err) //nolint
 		}
 
 		if !isLite {
 			if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-				return xerrors.Errorf("fetching proof parameters: %w", err)
+				return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
 			}
 		}
 
@@ -149,7 +149,7 @@ var DaemonCmd = &cli.Command{
 		if c.String("genesis") != "" {
 			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
 			if err != nil {
-				return xerrors.Errorf("reading genesis: %w", err)
+				return xerrors.Errorf("reading genesis: %w", err) //nolint
 			}
 		} else {
 			genBytes = lotusbuild.MaybeGenesis()
@@ -165,7 +165,7 @@ var DaemonCmd = &cli.Command{
 		liteModeDeps := node.Options()
 
 		if isLite {
-			gapi, closer, err := lcli.GetGatewayAPI(c)
+			gapi, closer, err := lcli.GetGatewayAPI(c) //nolint
 			if err != nil {
 				return err
 			}
@@ -177,7 +177,7 @@ var DaemonCmd = &cli.Command{
 		// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
 		// use ipfs/go-metrics-interface. This injects a Prometheus exporter
 		// for those. Metrics are exported to the default registry.
-		if err := metricsprometheus.Inject(); err != nil {
+		if err := metricsprometheus.Inject(); err != nil { //nolint
 			log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
 		}
 
@@ -199,7 +199,7 @@ var DaemonCmd = &cli.Command{
 
 			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
 				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr)
+					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr) //nolint
 					if err != nil {
 						return err
 					}
@@ -211,23 +211,23 @@ var DaemonCmd = &cli.Command{
 			),
 		)
 		if err != nil {
-			return xerrors.Errorf("initializing node: %w", err)
+			return xerrors.Errorf("initializing node: %w", err) //nolint
 		}
 
 		if daemonFlags.archive {
 			if daemonFlags.archiveModelStorage == "" {
-				stop(ctx)
-				return xerrors.Errorf("archive model storage must be set")
+				stop(ctx)                                                  //nolint
+				return xerrors.Errorf("archive model storage must be set") //nolint
 			}
 			if daemonFlags.archiveFileStorage == "" {
-				stop(ctx)
-				return xerrors.Errorf("archive file storage must be set")
+				stop(ctx)                                                 //nolint
+				return xerrors.Errorf("archive file storage must be set") //nolint
 			}
 		}
 
 		endpoint, err := r.APIEndpoint()
 		if err != nil {
-			return xerrors.Errorf("getting api endpoint: %w", err)
+			return xerrors.Errorf("getting api endpoint: %w", err) //nolint
 		}
 
 		//

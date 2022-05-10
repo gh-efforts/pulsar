@@ -154,16 +154,16 @@ func EnsureExists(path string) error {
 
 	comm, err := config.ConfigComment(SampleConf())
 	if err != nil {
-		return xerrors.Errorf("comment: %w", err)
+		return xerrors.Errorf("comment: %w", err) //nolint
 	}
 	_, err = c.Write(comm)
 	if err != nil {
-		_ = c.Close() // ignore error since we are recovering from a write error anyway
-		return xerrors.Errorf("write config: %w", err)
+		_ = c.Close()                                  // ignore error since we are recovering from a write error anyway
+		return xerrors.Errorf("write config: %w", err) //nolint
 	}
 
 	if err := c.Close(); err != nil {
-		return xerrors.Errorf("close config: %w", err)
+		return xerrors.Errorf("close config: %w", err) //nolint
 	}
 	return nil
 }
@@ -180,14 +180,14 @@ func FromFile(path string) (*Conf, error) {
 		return nil, err
 	}
 
-	defer file.Close() // nolint:errcheck // The file is RO
+	defer file.Close() // nolint: lll
 	return FromReader(file, DefaultConf())
 }
 
 // FromReader loads config from a reader instance.
 func FromReader(reader io.Reader, def *Conf) (*Conf, error) {
 	cfg := *def
-	_, err := toml.DecodeReader(reader, &cfg)
+	_, err := toml.DecodeReader(reader, &cfg) //nolint
 	if err != nil {
 		return nil, err
 	}

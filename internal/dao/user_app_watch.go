@@ -12,5 +12,7 @@ type UserAppWatchDao interface {
 	Create(ctx context.Context,
 		appWatchModel *model.UserAppWatch) (err error)
 	GetByAppId(ctx context.Context,
-		appId, address string) (appWatchModel *model.UserAppWatch, err error)
+		appId, address string) (appWatchModel model.UserAppWatch, err error)
+	Cancel(ctx context.Context,
+		appId, address string) (err error)
 }

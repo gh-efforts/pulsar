@@ -16,4 +16,6 @@ func Register(e *gin.Engine) {
 		return codex.OK.WithData("1")
 	}))
 	// todo more router
+	g := e.Group("/api/v1")
+	RegisterUserApp(g)
 }

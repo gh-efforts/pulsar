@@ -14,11 +14,12 @@ type UserAppService interface {
 		userId string, appType model.AppType) (model.UserApp, error)
 	FindByAddress(ctx context.Context,
 		address string) ([]*model.UserAppWatch, error)
-	CreateAppWatch(ctx context.Context, appWatch model.UserAppWatch) error
+	AddSubAddress(ctx context.Context, appWatch model.UserAppWatch) error
 	GetAppWatchByAppId(ctx context.Context,
-		appId string, address string) (*model.UserAppWatch, error)
+		appId string, address string) (model.UserAppWatch, error)
 	GetAppByAppId(ctx context.Context,
 		appId string) (model.UserApp, error)
+	CancelSubAddress(ctx context.Context, appId, address string) error
 }
 
 type UserAppServiceImpl struct {
@@ -50,11 +51,15 @@ func (userApp UserAppServiceImpl) FindByAddress(ctx context.Context,
 	return userApp.appWatch.FindByAddress(ctx, address)
 }
 
-func (userApp UserAppServiceImpl) CreateAppWatch(ctx context.Context, appWatch model.UserAppWatch) error {
+func (userApp UserAppServiceImpl) AddSubAddress(ctx context.Context, appWatch model.UserAppWatch) error {
 	return userApp.appWatch.Create(ctx, &appWatch)
 }
 
+func (userApp UserAppServiceImpl) CancelSubAddress(ctx context.Context, appId, address string) error {
+	return userApp.appWatch.Cancel(ctx, appId, address)
+}
+
 func (userApp UserAppServiceImpl) GetAppWatchByAppId(ctx context.Context,
-	appId string, address string) (*model.UserAppWatch, error) {
+	appId string, address string) (model.UserAppWatch, error) {
 	return userApp.appWatch.GetByAppId(ctx, appId, address)
 }

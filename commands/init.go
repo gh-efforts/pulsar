@@ -51,23 +51,23 @@ var InitCmd = &cli.Command{
 
 		r, err := repo.NewFS(initFlags.repo)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err)
+			return xerrors.Errorf("opening fs repo: %w", err) //nolint
 		}
 
 		if initFlags.config != "" {
-			if err := config.EnsureExists(initFlags.config); err != nil {
-				return xerrors.Errorf("ensuring config is present at %q: %w", initFlags.config, err)
+			if err := config.EnsureExists(initFlags.config); err != nil { //nolint
+				return xerrors.Errorf("ensuring config is present at %q: %w", initFlags.config, err) //nolint
 			}
 			r.SetConfigPath(initFlags.config)
 		}
 
 		err = r.Init(repo.FullNode)
 		if err != nil && err != repo.ErrRepoExists {
-			return xerrors.Errorf("repo init error: %w", err)
+			return xerrors.Errorf("repo init error: %w", err) //nolint
 		}
 
 		if err := paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-			return xerrors.Errorf("fetching proof parameters: %w", err)
+			return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
 		}
 
 		return nil

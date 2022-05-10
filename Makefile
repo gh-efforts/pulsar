@@ -343,4 +343,8 @@ endif
 wire:checkwire
 	cd ${PWD}/internal && wire
 
+.PHONY: run
+run:
+	go run main.go http
+
 

@@ -46,8 +46,15 @@ func (appWatch UserAppWatchDaoImpl) Create(ctx context.Context,
 	return
 }
 
+func (appWatch UserAppWatchDaoImpl) Cancel(ctx context.Context,
+	appId, address string) (err error) {
+	filter := bson.M{"app_id": appId, "address": address}
+	_, err = appWatch.GetCollection().DeleteOne(ctx, filter)
+	return
+}
+
 func (appWatch UserAppWatchDaoImpl) GetByAppId(ctx context.Context,
-	appId, address string) (appWatchModel *model.UserAppWatch, err error) {
+	appId, address string) (appWatchModel model.UserAppWatch, err error) {
 	filter := bson.M{"app_id": appId, "address": address}
 	result := appWatch.GetCollection().FindOne(ctx, filter)
 	err = helper.WarpMongoErr(result.Decode(&appWatchModel))
