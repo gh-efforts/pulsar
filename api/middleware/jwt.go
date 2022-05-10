@@ -3,11 +3,12 @@ package middleware
 import (
 	"errors"
 
+	"github.com/bitrainforest/pulsar/api/codex"
+
 	"github.com/bitrainforest/filmeta-hic/core/assert"
 
 	"github.com/go-kratos/kratos/v2/config"
 
-	"net/http"
 	"time"
 
 	"github.com/bitrainforest/pulsar/internal/service"
@@ -36,6 +37,10 @@ type (
 	}
 	JWTMiddleware struct {
 		appService service.UserAppService
+	}
+	TokenResp struct {
+		Expire string `json:"expire"`
+		Token  string `json:"token"`
 	}
 )
 
@@ -86,11 +91,10 @@ func PayloadFunc() func(data interface{}) jwt.MapClaims {
 
 func LoginResponse() func(*gin.Context, int, string, time.Time) {
 	return func(c *gin.Context, i int, token string, t time.Time) {
-		c.JSON(http.StatusOK, gin.H{
-			"code":   http.StatusOK,
-			"token":  token,
-			"expire": t.Format(TimeFormat),
-		})
+		var resp TokenResp
+		resp.Token = token
+		resp.Expire = t.Format(TimeFormat)
+		codex.OK.WithData(resp).RenderJson(c)
 	}
 }
 
@@ -129,19 +133,15 @@ func Authenticator(middleware *JWTMiddleware) func(c *gin.Context) (interface{},
 
 func Unauthorized() func(c *gin.Context, code int, message string) {
 	return func(c *gin.Context, code int, message string) {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    code,
-			"message": message,
-		})
+		codex.ErrTokenInvalid.RenderJson(c)
 	}
 }
 
 func RefreshResponse() func(*gin.Context, int, string, time.Time) {
 	return func(c *gin.Context, i int, token string, t time.Time) {
-		c.JSON(http.StatusOK, gin.H{
-			"code":   http.StatusOK,
-			"token":  token,
-			"expire": t.Format(TimeFormat),
-		})
+		var resp TokenResp
+		resp.Expire = t.Format(TimeFormat)
+		resp.Token = token
+		codex.OK.WithData(resp).RenderJson(c)
 	}
 }
