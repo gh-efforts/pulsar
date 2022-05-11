@@ -26,7 +26,7 @@ func main() {
 
 	app := &cli.App{
 		Commands: []*cli.Command{
-			commands.DaemonCmd, commands.PulsarCommand},
+			commands.PulsarCommand},
 	}
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Fatal(err)

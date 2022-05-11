@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bitrainforest/pulsar/api/middleware"
 
 	"github.com/bitrainforest/pulsar/api/router"
@@ -39,7 +37,29 @@ const (
 var PulsarCommand = &cli.Command{
 	Name:    "http",
 	Aliases: []string{"n"},
+	Flags: flagSet(
+		clientAPIFlagSet,
+		[]cli.Flag{
+			&cli.BoolFlag{
+				Name: "bootstrap",
+				// TODO: usage description
+				EnvVars:     []string{"BONY_BOOTSTRAP"},
+				Value:       true,
+				Destination: &daemonFlags.bootstrap,
+				Hidden:      true, // hide until we decide if we want to keep this.
+			},
+			&cli.StringFlag{
+				Name:        "config",
+				Usage:       "Specify path of config file to use.",
+				EnvVars:     []string{"BONY_CONFIG"},
+				Destination: &daemonFlags.config,
+			},
+		}),
+	Before: BeforeDaemon,
 	Action: func(context *cli.Context) error {
+		// log
+		log.SetUp(ServiceName)
+
 		var (
 			opts     []kratos.Option
 			httpOpts []http.ServerOption
@@ -70,9 +90,6 @@ var PulsarCommand = &cli.Command{
 		})
 		// load jwt.secret
 		middleware.MustLoadSecret(conf)
-
-		// log
-		log.SetUp(ServiceName)
 		// mustLoadRedis
 		store.MustLoadRedis(conf)
 
@@ -88,8 +105,9 @@ var PulsarCommand = &cli.Command{
 
 		app := kratos.New(opts...)
 		if err := app.Run(); err != nil {
-			return fmt.Errorf("app run err:%v", err)
+			log.Infof("app run err:%v", err)
 		}
+		<-finishCh
 		return nil
 	},
 }

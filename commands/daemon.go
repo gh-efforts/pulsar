@@ -39,25 +39,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
+var finishCh <-chan struct{}
+
 var clientAPIFlags struct {
 	apiAddr  string
 	apiToken string
-}
-
-var clientAPIFlag = &cli.StringFlag{
-	Name:        "api",
-	Usage:       "Address of bony api in multiaddr format.",
-	EnvVars:     []string{"BONY_API"},
-	Value:       "/ip4/127.0.0.1/tcp/1234",
-	Destination: &clientAPIFlags.apiAddr,
-}
-
-var clientTokenFlag = &cli.StringFlag{
-	Name:        "api-token",
-	Usage:       "Authentication token for bony api.",
-	EnvVars:     []string{"BONY_API_TOKEN"},
-	Value:       "",
-	Destination: &clientAPIFlags.apiToken,
 }
 
 var repoFlag = &cli.StringFlag{
@@ -69,8 +55,6 @@ var repoFlag = &cli.StringFlag{
 
 // clientAPIFlagSet are used by commands that act as clients of a daemon's API
 var clientAPIFlagSet = []cli.Flag{
-	clientAPIFlag,
-	clientTokenFlag,
 	repoFlag,
 }
 
@@ -85,200 +69,371 @@ type daemonOpts struct {
 
 var daemonFlags daemonOpts
 
-var DaemonCmd = &cli.Command{
-	Name:        "daemon",
-	Usage:       "Start a bony daemon process.",
-	Description: `daemon is the main command you use to run a bony node.`,
-	Flags: flagSet(
-		clientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name: "bootstrap",
-				// TODO: usage description
-				EnvVars:     []string{"BONY_BOOTSTRAP"},
-				Value:       true,
-				Destination: &daemonFlags.bootstrap,
-				Hidden:      true, // hide until we decide if we want to keep this.
-			},
-			&cli.StringFlag{
-				Name:        "config",
-				Usage:       "Specify path of config file to use.",
-				EnvVars:     []string{"BONY_CONFIG"},
-				Destination: &daemonFlags.config,
-			},
-		}),
-	Action: func(c *cli.Context) error {
-		isLite := c.Bool("lite")
+//var DaemonCmd = &cli.Command{
+//	Name:        "daemon",
+//	Usage:       "Start a bony daemon process.",
+//	Description: `daemon is the main command you use to run a bony node.`,
+//	Flags: flagSet(
+//		clientAPIFlagSet,
+//		[]cli.Flag{
+//			&cli.BoolFlag{
+//				Name: "bootstrap",
+//				// TODO: usage description
+//				EnvVars:     []string{"BONY_BOOTSTRAP"},
+//				Value:       true,
+//				Destination: &daemonFlags.bootstrap,
+//				Hidden:      true, // hide until we decide if we want to keep this.
+//			},
+//			&cli.StringFlag{
+//				Name:        "config",
+//				Usage:       "Specify path of config file to use.",
+//				EnvVars:     []string{"BONY_CONFIG"},
+//				Destination: &daemonFlags.config,
+//			},
+//		}),
+//	Action: func(c *cli.Context) error {
+//		isLite := c.Bool("lite")
+//
+//		log2.SetUp("pulsar")
+//
+//		lotuslog.SetupLogLevels()
+//
+//		ctx := context.Background()
+//		var err error
+//		repoPath, err := homedir.Expand(c.String("repo"))
+//		if err != nil {
+//			log.Warnw("could not expand repo location", "error", err)
+//		} else {
+//			log.Infof("bony repo: %s", repoPath)
+//		}
+//
+//		r, err := repo.NewFS(repoPath)
+//		if err != nil {
+//			return xerrors.Errorf("opening fs repo: %w", err) //nolint
+//		}
+//
+//		if daemonFlags.config == "" {
+//			daemonFlags.config = filepath.Join(repoPath, "config.toml")
+//		} else {
+//			daemonFlags.config, err = homedir.Expand(daemonFlags.config)
+//			if err != nil {
+//				log.Warnw("could not expand repo location", "error", err)
+//			} else {
+//				log.Infof("bony config: %s", daemonFlags.config)
+//			}
+//		}
+//		//if err := config.EnsureExists(daemonFlags.config); err != nil {
+//		//	return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
+//		//}
+//
+//		r.SetConfigPath(daemonFlags.config)
+//
+//		err = r.Init(repo.FullNode)
+//		if err != nil && err != repo.ErrRepoExists {
+//			return xerrors.Errorf("repo init error: %w", err) //nolint
+//		}
+//
+//		if !isLite {
+//			if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
+//				return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
+//			}
+//		}
+//
+//		var genBytes []byte
+//		if c.String("genesis") != "" {
+//			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
+//			if err != nil {
+//				return xerrors.Errorf("reading genesis: %w", err) //nolint
+//			}
+//		} else {
+//			genBytes = lotusbuild.MaybeGenesis()
+//		}
+//
+//		genesis := node.Options()
+//		if len(genBytes) > 0 {
+//			genesis = node.Override(new(lotusmodules.Genesis), lotusmodules.LoadGenesis(genBytes))
+//		}
+//
+//		//isBootstrapper := false
+//		shutdown := make(chan struct{})
+//		liteModeDeps := node.Options()
+//
+//		if isLite {
+//			gapi, closer, err := lcli.GetGatewayAPI(c) //nolint
+//			if err != nil {
+//				return err
+//			}
+//
+//			defer closer()
+//			liteModeDeps = node.Override(new(api.Gateway), gapi)
+//		}
+//
+//		// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
+//		// use ipfs/go-metrics-interface. This injects a Prometheus exporter
+//		// for those. Metrics are exported to the default registry.
+//		if err := metricsprometheus.Inject(); err != nil { //nolint
+//			log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
+//		}
+//
+//		var api api.FullNode
+//
+//		//todo
+//		ownExecMonitor, err := subscriber.NewCore("", subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
+//		assert.CheckErr(err)
+//
+//		stop, err := node.New(ctx,
+//			// Start Sentinel Dep injection
+//			node.FullAPI(&api, node.Lite(isLite)),
+//
+//			//node.Override(new(dtypes.Bootstrapper), isBootstrapper),
+//			node.Override(new(dtypes.ShutdownChan), shutdown),
+//			node.Base(),
+//			node.Repo(r),
+//			node.Override(new(*stmgr.StateManager), modules.StateManager),
+//			// replace with our own exec monitor
+//			//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
+//			node.Override(new(stmgr.ExecMonitor), ownExecMonitor),
+//
+//			// End custom StateManager injection.
+//			genesis,
+//			liteModeDeps,
+//
+//			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
+//				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
+//					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr) //nolint
+//					if err != nil {
+//						return err
+//					}
+//					return lr.SetAPIEndpoint(apima)
+//				})),
+//			node.ApplyIf(func(s *node.Settings) bool { return !daemonFlags.bootstrap },
+//				node.Unset(node.RunPeerMgrKey),
+//				node.Unset(new(*peermgr.PeerMgr)),
+//			),
+//		)
+//		if err != nil {
+//			return xerrors.Errorf("initializing node: %w", err) //nolint
+//		}
+//
+//		if daemonFlags.archive {
+//			if daemonFlags.archiveModelStorage == "" {
+//				stop(ctx)                                                  //nolint
+//				return xerrors.Errorf("archive model storage must be set") //nolint
+//			}
+//			if daemonFlags.archiveFileStorage == "" {
+//				stop(ctx)                                                 //nolint
+//				return xerrors.Errorf("archive file storage must be set") //nolint
+//			}
+//		}
+//
+//		endpoint, err := r.APIEndpoint()
+//		if err != nil {
+//			return xerrors.Errorf("getting api endpoint: %w", err) //nolint
+//		}
+//
+//		//
+//		// Instantiate JSON-RPC endpoint.
+//		// ----
+//
+//		// Populate JSON-RPC options.
+//		serverOptions := make([]jsonrpc.ServerOption, 0)
+//		if maxRequestSize := c.Int("api-max-req-size"); maxRequestSize != 0 {
+//			serverOptions = append(serverOptions, jsonrpc.WithMaxRequestSize(int64(maxRequestSize)))
+//		}
+//
+//		// Instantiate the full node handler.
+//		h, err := node.FullNodeHandler(api, true, serverOptions...)
+//		if err != nil {
+//			return fmt.Errorf("failed to instantiate rpc handler: %s", err)
+//		}
+//
+//		// Serve the RPC.
+//		rpcStopper, err := node.ServeRPC(h, "lotus-daemon", endpoint)
+//		if err != nil {
+//			return fmt.Errorf("failed to start json-rpc endpoint: %s", err)
+//		}
+//
+//		// Monitor for shutdown.
+//		finishCh := node.MonitorShutdown(shutdown,
+//			node.ShutdownHandler{Component: "rpc server", StopFunc: rpcStopper},
+//			node.ShutdownHandler{Component: "node", StopFunc: stop},
+//		)
+//
+//		<-finishCh // fires when shutdown is complete.
+//
+//		// TODO: properly parse api endpoint (or make it a URL)
+//		return nil
+//	},
+//}
 
-		log2.SetUp("pulsar")
+func BeforeDaemon(c *cli.Context) error {
+	isLite := c.Bool("lite")
+	log2.SetUp("pulsar")
 
-		lotuslog.SetupLogLevels()
+	lotuslog.SetupLogLevels()
 
-		ctx := context.Background()
-		var err error
-		repoPath, err := homedir.Expand(c.String("repo"))
+	ctx := context.Background()
+	var err error
+	repoPath, err := homedir.Expand(c.String("repo"))
+	if err != nil {
+		log.Warnw("could not expand repo location", "error", err)
+	} else {
+		log.Infof("bony repo: %s", repoPath)
+	}
+
+	r, err := repo.NewFS(repoPath)
+	if err != nil {
+		return xerrors.Errorf("opening fs repo: %w", err) //nolint
+	}
+
+	if daemonFlags.config == "" {
+		daemonFlags.config = filepath.Join(repoPath, "config.toml")
+	} else {
+		daemonFlags.config, err = homedir.Expand(daemonFlags.config)
 		if err != nil {
 			log.Warnw("could not expand repo location", "error", err)
 		} else {
-			log.Infof("bony repo: %s", repoPath)
+			log.Infof("bony config: %s", daemonFlags.config)
 		}
+	}
+	//if err := config.EnsureExists(daemonFlags.config); err != nil {
+	//	return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
+	//}
 
-		r, err := repo.NewFS(repoPath)
+	r.SetConfigPath(daemonFlags.config)
+
+	err = r.Init(repo.FullNode)
+	if err != nil && err != repo.ErrRepoExists {
+		return xerrors.Errorf("repo init error: %w", err) //nolint
+	}
+
+	if !isLite {
+		if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
+			return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
+		}
+	}
+
+	var genBytes []byte
+	if c.String("genesis") != "" {
+		genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
 		if err != nil {
-			return xerrors.Errorf("opening fs repo: %w", err) //nolint
+			return xerrors.Errorf("reading genesis: %w", err) //nolint
 		}
+	} else {
+		genBytes = lotusbuild.MaybeGenesis()
+	}
 
-		if daemonFlags.config == "" {
-			daemonFlags.config = filepath.Join(repoPath, "config.toml")
-		} else {
-			daemonFlags.config, err = homedir.Expand(daemonFlags.config)
-			if err != nil {
-				log.Warnw("could not expand repo location", "error", err)
-			} else {
-				log.Infof("bony config: %s", daemonFlags.config)
-			}
-		}
-		//if err := config.EnsureExists(daemonFlags.config); err != nil {
-		//	return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
-		//}
+	genesis := node.Options()
+	if len(genBytes) > 0 {
+		genesis = node.Override(new(lotusmodules.Genesis), lotusmodules.LoadGenesis(genBytes))
+	}
 
-		r.SetConfigPath(daemonFlags.config)
+	//isBootstrapper := false
+	shutdown := make(chan struct{})
+	liteModeDeps := node.Options()
 
-		err = r.Init(repo.FullNode)
-		if err != nil && err != repo.ErrRepoExists {
-			return xerrors.Errorf("repo init error: %w", err) //nolint
-		}
-
-		if !isLite {
-			if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
-				return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
-			}
-		}
-
-		var genBytes []byte
-		if c.String("genesis") != "" {
-			genBytes, err = ioutil.ReadFile(daemonFlags.genesis)
-			if err != nil {
-				return xerrors.Errorf("reading genesis: %w", err) //nolint
-			}
-		} else {
-			genBytes = lotusbuild.MaybeGenesis()
-		}
-
-		genesis := node.Options()
-		if len(genBytes) > 0 {
-			genesis = node.Override(new(lotusmodules.Genesis), lotusmodules.LoadGenesis(genBytes))
-		}
-
-		//isBootstrapper := false
-		shutdown := make(chan struct{})
-		liteModeDeps := node.Options()
-
-		if isLite {
-			gapi, closer, err := lcli.GetGatewayAPI(c) //nolint
-			if err != nil {
-				return err
-			}
-
-			defer closer()
-			liteModeDeps = node.Override(new(api.Gateway), gapi)
-		}
-
-		// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
-		// use ipfs/go-metrics-interface. This injects a Prometheus exporter
-		// for those. Metrics are exported to the default registry.
-		if err := metricsprometheus.Inject(); err != nil { //nolint
-			log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
-		}
-
-		var api api.FullNode
-
-		//todo
-		ownExecMonitor, err := subscriber.NewCore("", subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
-		assert.CheckErr(err)
-
-		stop, err := node.New(ctx,
-			// Start Sentinel Dep injection
-			node.FullAPI(&api, node.Lite(isLite)),
-
-			//node.Override(new(dtypes.Bootstrapper), isBootstrapper),
-			node.Override(new(dtypes.ShutdownChan), shutdown),
-			node.Base(),
-			node.Repo(r),
-			node.Override(new(*stmgr.StateManager), modules.StateManager),
-			// replace with our own exec monitor
-			//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
-			node.Override(new(stmgr.ExecMonitor), ownExecMonitor),
-
-			// End custom StateManager injection.
-			genesis,
-			liteModeDeps,
-
-			node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
-				node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
-					apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr) //nolint
-					if err != nil {
-						return err
-					}
-					return lr.SetAPIEndpoint(apima)
-				})),
-			node.ApplyIf(func(s *node.Settings) bool { return !daemonFlags.bootstrap },
-				node.Unset(node.RunPeerMgrKey),
-				node.Unset(new(*peermgr.PeerMgr)),
-			),
-		)
+	if isLite {
+		gapi, closer, err := lcli.GetGatewayAPI(c) //nolint
 		if err != nil {
-			return xerrors.Errorf("initializing node: %w", err) //nolint
+			return err
 		}
 
-		if daemonFlags.archive {
-			if daemonFlags.archiveModelStorage == "" {
-				stop(ctx)                                                  //nolint
-				return xerrors.Errorf("archive model storage must be set") //nolint
-			}
-			if daemonFlags.archiveFileStorage == "" {
-				stop(ctx)                                                 //nolint
-				return xerrors.Errorf("archive file storage must be set") //nolint
-			}
+		defer closer()
+		liteModeDeps = node.Override(new(api.Gateway), gapi)
+	}
+
+	// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
+	// use ipfs/go-metrics-interface. This injects a Prometheus exporter
+	// for those. Metrics are exported to the default registry.
+	if err := metricsprometheus.Inject(); err != nil { //nolint
+		log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
+	}
+
+	var api api.FullNode
+
+	//todo
+	ownExecMonitor, err := subscriber.NewCore("", subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
+	assert.CheckErr(err)
+
+	stop, err := node.New(ctx,
+		// Start Sentinel Dep injection
+		node.FullAPI(&api, node.Lite(isLite)),
+
+		//node.Override(new(dtypes.Bootstrapper), isBootstrapper),
+		node.Override(new(dtypes.ShutdownChan), shutdown),
+		node.Base(),
+		node.Repo(r),
+		node.Override(new(*stmgr.StateManager), modules.StateManager),
+		// replace with our own exec monitor
+		//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
+		node.Override(new(stmgr.ExecMonitor), ownExecMonitor),
+
+		// End custom StateManager injection.
+		genesis,
+		liteModeDeps,
+
+		node.ApplyIf(func(s *node.Settings) bool { return c.IsSet("api") },
+			node.Override(node.SetApiEndpointKey, func(lr repo.LockedRepo) error {
+				apima, err := multiaddr.NewMultiaddr(clientAPIFlags.apiAddr) //nolint
+				if err != nil {
+					return err
+				}
+				return lr.SetAPIEndpoint(apima)
+			})),
+		node.ApplyIf(func(s *node.Settings) bool { return !daemonFlags.bootstrap },
+			node.Unset(node.RunPeerMgrKey),
+			node.Unset(new(*peermgr.PeerMgr)),
+		),
+	)
+	if err != nil {
+		return xerrors.Errorf("initializing node: %w", err) //nolint
+	}
+
+	if daemonFlags.archive {
+		if daemonFlags.archiveModelStorage == "" {
+			stop(ctx)                                                  //nolint
+			return xerrors.Errorf("archive model storage must be set") //nolint
 		}
-
-		endpoint, err := r.APIEndpoint()
-		if err != nil {
-			return xerrors.Errorf("getting api endpoint: %w", err) //nolint
+		if daemonFlags.archiveFileStorage == "" {
+			stop(ctx)                                                 //nolint
+			return xerrors.Errorf("archive file storage must be set") //nolint
 		}
+	}
 
-		//
-		// Instantiate JSON-RPC endpoint.
-		// ----
+	endpoint, err := r.APIEndpoint()
+	if err != nil {
+		return xerrors.Errorf("getting api endpoint: %w", err) //nolint
+	}
 
-		// Populate JSON-RPC options.
-		serverOptions := make([]jsonrpc.ServerOption, 0)
-		if maxRequestSize := c.Int("api-max-req-size"); maxRequestSize != 0 {
-			serverOptions = append(serverOptions, jsonrpc.WithMaxRequestSize(int64(maxRequestSize)))
-		}
+	//
+	// Instantiate JSON-RPC endpoint.
+	// ----
 
-		// Instantiate the full node handler.
-		h, err := node.FullNodeHandler(api, true, serverOptions...)
-		if err != nil {
-			return fmt.Errorf("failed to instantiate rpc handler: %s", err)
-		}
+	// Populate JSON-RPC options.
+	serverOptions := make([]jsonrpc.ServerOption, 0)
+	if maxRequestSize := c.Int("api-max-req-size"); maxRequestSize != 0 {
+		serverOptions = append(serverOptions, jsonrpc.WithMaxRequestSize(int64(maxRequestSize)))
+	}
 
-		// Serve the RPC.
-		rpcStopper, err := node.ServeRPC(h, "lotus-daemon", endpoint)
-		if err != nil {
-			return fmt.Errorf("failed to start json-rpc endpoint: %s", err)
-		}
+	// Instantiate the full node handler.
+	h, err := node.FullNodeHandler(api, true, serverOptions...)
+	if err != nil {
+		return fmt.Errorf("failed to instantiate rpc handler: %s", err)
+	}
 
-		// Monitor for shutdown.
-		finishCh := node.MonitorShutdown(shutdown,
-			node.ShutdownHandler{Component: "rpc server", StopFunc: rpcStopper},
-			node.ShutdownHandler{Component: "node", StopFunc: stop},
-		)
-		<-finishCh // fires when shutdown is complete.
+	// Serve the RPC.
+	rpcStopper, err := node.ServeRPC(h, "lotus-daemon", endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to start json-rpc endpoint: %s", err)
+	}
 
-		// TODO: properly parse api endpoint (or make it a URL)
-		return nil
-	},
+	// Monitor for shutdown.
+	finishCh = node.MonitorShutdown(shutdown,
+		node.ShutdownHandler{Component: "rpc server", StopFunc: rpcStopper},
+		node.ShutdownHandler{Component: "node", StopFunc: stop},
+	)
+	//<-finishCh // fires when shutdown is complete.
+	return nil
 }
 
 func flagSet(fs ...[]cli.Flag) []cli.Flag {

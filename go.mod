@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/BurntSushi/toml v1.1.0
+	github.com/appleboy/gin-jwt/v2 v2.8.0
 	github.com/bitrainforest/filmeta-hic v0.0.0-20220509095252-416b5f79fbf7
 	github.com/filecoin-project/go-address v0.0.6
 	github.com/filecoin-project/go-jsonrpc v0.1.5
@@ -11,14 +12,18 @@ require (
 	github.com/filecoin-project/lotus v1.15.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-kratos/kratos/v2 v2.2.2
+	github.com/google/wire v0.5.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-cid v0.1.0
 	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.5.0
+	github.com/nats-io/nats.go v1.15.0
 	github.com/pkg/errors v0.9.1
+	github.com/satori/go.uuid v1.2.0
 	github.com/urfave/cli/v2 v2.5.1
+	go.mongodb.org/mongo-driver v1.9.0
 	go.uber.org/fx v1.15.0
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
 )
@@ -35,7 +40,6 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/akavel/rsrc v0.8.0 // indirect
 	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
-	github.com/appleboy/gin-jwt/v2 v2.8.0 // indirect
 	github.com/benbjohnson/clock v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.0 // indirect
@@ -133,7 +137,6 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/google/wire v0.5.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hako/durafmt v0.0.0-20200710122514-c0fb7b4da026 // indirect
@@ -272,7 +275,6 @@ require (
 	github.com/multiformats/go-multihash v0.1.0 // indirect
 	github.com/multiformats/go-multistream v0.2.2 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
-	github.com/nats-io/nats.go v1.15.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nikkolasg/hexjson v0.0.0-20181101101858-78e39397e00c // indirect
@@ -296,7 +298,6 @@ require (
 	github.com/rivo/uniseg v0.1.0 // indirect
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
@@ -327,7 +328,6 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0 // indirect
-	go.mongodb.org/mongo-driver v1.9.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.3.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
