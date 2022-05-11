@@ -3,6 +3,10 @@ package service
 import (
 	"context"
 
+	"github.com/go-kratos/kratos/v2/log"
+
+	"github.com/bitrainforest/pulsar/internal/cache"
+
 	"github.com/bitrainforest/pulsar/internal/dao"
 	"github.com/bitrainforest/pulsar/internal/model"
 )
@@ -27,7 +31,8 @@ type UserAppServiceImpl struct {
 	appWatch dao.UserAppWatchDao
 }
 
-func NewUserAppService(userApp dao.UserAppDao, appWatch dao.UserAppWatchDao) UserAppService {
+func NewUserAppService(userApp dao.UserAppDao,
+	appWatch dao.UserAppWatchDao) UserAppService {
 	return UserAppServiceImpl{userApp: userApp, appWatch: appWatch}
 }
 
@@ -52,7 +57,16 @@ func (userApp UserAppServiceImpl) FindByAddress(ctx context.Context,
 }
 
 func (userApp UserAppServiceImpl) AddSubAddress(ctx context.Context, appWatch model.UserAppWatch) error {
-	return userApp.appWatch.Create(ctx, &appWatch)
+	if err := userApp.appWatch.Create(ctx, &appWatch); err != nil {
+		return err
+	}
+	markCache := cache.NewAddressMark(ctx)
+	if !markCache.ExistAddress(ctx, appWatch.Address) {
+		if !markCache.MarkAddress(ctx, appWatch.Address) {
+			log.Warnf("[AddSubAddress] mark address %v err", appWatch)
+		}
+	}
+	return nil
 }
 
 func (userApp UserAppServiceImpl) CancelSubAddress(ctx context.Context, appId, address string) error {

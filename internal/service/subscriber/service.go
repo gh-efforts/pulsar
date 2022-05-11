@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	model2 "github.com/bitrainforest/pulsar/internal/model"
-
 	"github.com/bitrainforest/filmeta-hic/core/threading"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -62,22 +60,13 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 }
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
-	fmt.Println("[Core MessageApplied] new message:", mcid)
+	fmt.Println("[Core MessageApplied] message:", mcid, msg.From.String(), msg.From.String())
 	trading := model.Trading{
 		TipSet: ts,
 		MCid:   mcid,
 		Msg:    msg,
 	}
 
-	// for test
-	watchModel := model2.NewDefaultAppWatch()
-	watchModel.AppId = "56e92447-53a3-48d3-820d-a28c5876f050"
-	watchModel.Address = msg.From.String()
-
-	if err := core.opts.appWatchDao.Create(context.TODO(), &watchModel); err != nil {
-		log.Errorf("Create err:%v", err)
-		return nil
-	}
 	// todo to Confirm whether the call is asynchronous or synchronous
 	select {
 	case <-ctx.Done():
@@ -88,12 +77,24 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 }
 
 func (core *Core) processing() {
+	markCache := core.opts.addressMarkCache
 	for msg := range core.msgBuffer {
+		ctx := context.Background()
+
+		to := msg.Msg.To.String()
+		from := msg.Msg.From.String()
+
 		// we should to cache the subList
 		// todo cache
+		if !markCache.ExistAddress(ctx, to) &&
+			!markCache.ExistAddress(ctx, from) {
+			log.Infof("both address from %v,to %v have  no sub:", from, to)
+			continue
+		}
+
 		// todo de-duplication
 		list, err := core.opts.appWatchDao.FindByAddresses(context.Background(),
-			[]string{msg.Msg.From.String(), msg.Msg.To.String()})
+			[]string{from, to})
 		if err != nil {
 			log.Errorf("[core.processing]: find by addresses err: %s", err)
 			continue

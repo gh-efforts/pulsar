@@ -1,6 +1,9 @@
 package subscriber
 
 import (
+	"context"
+
+	"github.com/bitrainforest/pulsar/internal/cache"
 	"github.com/bitrainforest/pulsar/internal/dao"
 	"github.com/nats-io/nats.go"
 )
@@ -17,18 +20,30 @@ type (
 		natsUri   string
 		msgBuffer int64
 		//userAppDao dao.UserAppDao
-		appWatchDao dao.UserAppWatchDao
+		appWatchDao      dao.UserAppWatchDao
+		addressMarkCache cache.AddressMark
 	}
 )
 
 func defaultOpts() Opts {
-	return Opts{msgBuffer: DefaultMsgBuffer, natsUri: nats.DefaultURL}
+	return Opts{
+		msgBuffer: DefaultMsgBuffer, natsUri: nats.DefaultURL,
+		addressMarkCache: cache.NewAddressMark(context.Background()),
+	}
 }
 
 func WithUserAppWatchDao(appWatch dao.UserAppWatchDao) OptFn {
 	return func(opts *Opts) {
 		if appWatch != nil {
 			opts.appWatchDao = appWatch
+		}
+	}
+}
+
+func WithAddressMarkCache(mark cache.AddressMark) OptFn {
+	return func(opts *Opts) {
+		if mark != nil {
+			opts.addressMarkCache = mark
 		}
 	}
 }

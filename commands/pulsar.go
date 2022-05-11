@@ -34,80 +34,78 @@ const (
 	DefaultVersion = "v1"
 )
 
-var PulsarCommand = &cli.Command{
-	Name:    "http",
-	Aliases: []string{"n"},
-	Flags: flagSet(
-		clientAPIFlagSet,
-		[]cli.Flag{
-			&cli.BoolFlag{
-				Name: "bootstrap",
-				// TODO: usage description
-				EnvVars:     []string{"BONY_BOOTSTRAP"},
-				Value:       true,
-				Destination: &daemonFlags.bootstrap,
-				Hidden:      true, // hide until we decide if we want to keep this.
-			},
-			&cli.StringFlag{
-				Name:        "config",
-				Usage:       "Specify path of config file to use.",
-				EnvVars:     []string{"BONY_CONFIG"},
-				Destination: &daemonFlags.config,
-			},
-		}),
-	Before: BeforeDaemon,
-	Action: func(context *cli.Context) error {
-		// log
-		log.SetUp(ServiceName)
+var (
+	conf     kratosConfig.Config
+	fixedEnv envx.FixedEnv
+)
 
-		var (
-			opts     []kratos.Option
-			httpOpts []http.ServerOption
-			conf     kratosConfig.Config
-			err      error
-		)
-		fixedEnv := envx.GetEnvs()
+func init() {
+	fixedEnv = envx.GetEnvs()
+}
 
-		if conf, err = config.LoadConfigAndInitData(ServiceName, func() (schema config.Schema, host string) {
-			return config.Etcd, fixedEnv.ConfigETCD
-		}, func() (schema config.Schema, host string) {
-			return config.File, fixedEnv.ConfigPath
-		}); err != nil {
+var (
+	PulsarCommand = &cli.Command{
+		Name:    "http",
+		Aliases: []string{"n"},
+		Flags: flagSet(
+			clientAPIFlagSet),
+		Before: func(context *cli.Context) error {
+			MustLoadConf()
+			return BeforeDaemon(context)
+		},
+		Action: func(context *cli.Context) error {
+			var (
+				opts     []kratos.Option
+				httpOpts []http.ServerOption
+			)
+			httpOpts = append(httpOpts, http.Address(fixedEnv.HttpAddr))
+
+			// set up http service
+			httpServer := httpservice.GetHttpServer(func(engine *gin.Engine) {
+				router.Register(engine)
+			}, nil, httpOpts...)
+
+			opts = append(opts, log.LoggerKratosOption(ServiceName, DefaultVersion))
+			opts = append(opts, kratos.Server(httpServer))
+
+			app := kratos.New(opts...)
+			if err := app.Run(); err != nil {
+				log.Errorf("app run err:%v", err)
+			}
+			<-finishCh
+			return nil
+		},
+	}
+)
+
+func MustLoadConf() {
+	// log
+	log.SetUp(ServiceName)
+	var (
+		err error
+	)
+	if conf, err = config.LoadConfigAndInitData(ServiceName, func() (schema config.Schema, host string) {
+		return config.Etcd, fixedEnv.ConfigETCD
+	}, func() (schema config.Schema, host string) {
+		return config.File, fixedEnv.ConfigPath
+	}); err != nil {
+		assert.CheckErr(err)
+	}
+
+	// must init mongo
+	store.MustLoadMongoDB(conf, func(cfg kconf.Config) (*mongox2.Conf, error) {
+		v := cfg.Value("data.mongo.uri")
+		mongoUri, err := v.String()
+		if err != nil {
 			assert.CheckErr(err)
 		}
-
-		// must init mongo
-		store.MustLoadMongoDB(conf, func(cfg kconf.Config) (*mongox2.Conf, error) {
-			v := cfg.Value("data.mongo.uri")
-			mongoUri, err := v.String()
-			if err != nil {
-				assert.CheckErr(err)
-			}
-			if mongoUri == "" {
-				assert.CheckErr(errors.New("mongoUri must not be empty"))
-			}
-			return &mongox2.Conf{Uri: mongoUri}, nil
-		})
-		// load jwt.secret
-		middleware.MustLoadSecret(conf)
-		// mustLoadRedis
-		store.MustLoadRedis(conf)
-
-		httpOpts = append(httpOpts, http.Address(fixedEnv.HttpAddr))
-		// set up http service
-
-		httpServer := httpservice.GetHttpServer(func(engine *gin.Engine) {
-			router.Register(engine)
-		}, nil, httpOpts...)
-
-		opts = append(opts, log.LoggerKratosOption(ServiceName, DefaultVersion))
-		opts = append(opts, kratos.Server(httpServer))
-
-		app := kratos.New(opts...)
-		if err := app.Run(); err != nil {
-			log.Errorf("app run err:%v", err)
+		if mongoUri == "" {
+			assert.CheckErr(errors.New("mongoUri must not be empty"))
 		}
-		<-finishCh
-		return nil
-	},
+		return &mongox2.Conf{Uri: mongoUri}, nil
+	})
+	// load jwt.secret
+	middleware.MustLoadSecret(conf)
+	// mustLoadRedis
+	store.MustLoadRedis(conf)
 }
