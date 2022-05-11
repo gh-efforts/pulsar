@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	model2 "github.com/bitrainforest/pulsar/internal/model"
+
 	"github.com/bitrainforest/filmeta-hic/core/threading"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -60,16 +62,26 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 }
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
-	fmt.Println("core新消息:", mcid)
+	fmt.Println("[Core MessageApplied] new message:", mcid)
 	trading := model.Trading{
 		TipSet: ts,
 		MCid:   mcid,
 		Msg:    msg,
 	}
+
+	// for test
+	watchModel := model2.NewDefaultAppWatch()
+	watchModel.AppId = "56e92447-53a3-48d3-820d-a28c5876f050"
+	watchModel.Address = msg.From.String()
+
+	if err := core.opts.appWatchDao.Create(context.TODO(), &watchModel); err != nil {
+		log.Errorf("Create err:%v", err)
+		return nil
+	}
 	// todo to Confirm whether the call is asynchronous or synchronous
 	select {
 	case <-ctx.Done():
-		log.Errorf("core.MessageApplied: context done: %s", ctx.Err())
+		log.Errorf("[Core MessageApplied] core.MessageApplied: context done: %s", ctx.Err())
 	case core.msgBuffer <- &trading:
 	}
 	return nil

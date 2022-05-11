@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	log2 "github.com/bitrainforest/filmeta-hic/core/log"
+
+	"github.com/bitrainforest/pulsar/internal/dao"
+
 	"github.com/bitrainforest/filmeta-hic/core/assert"
 
 	"github.com/bitrainforest/pulsar/internal/service/subscriber"
@@ -106,6 +110,8 @@ var DaemonCmd = &cli.Command{
 	Action: func(c *cli.Context) error {
 		isLite := c.Bool("lite")
 
+		log2.SetUp("pulsar")
+
 		lotuslog.SetupLogLevels()
 
 		ctx := context.Background()
@@ -188,7 +194,7 @@ var DaemonCmd = &cli.Command{
 		var api api.FullNode
 
 		//todo
-		ownExecMonitor, err := subscriber.NewCore("")
+		ownExecMonitor, err := subscriber.NewCore("", subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
 		assert.CheckErr(err)
 
 		stop, err := node.New(ctx,
