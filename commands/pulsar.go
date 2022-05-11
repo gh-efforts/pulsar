@@ -105,7 +105,7 @@ var PulsarCommand = &cli.Command{
 
 		app := kratos.New(opts...)
 		if err := app.Run(); err != nil {
-			log.Infof("app run err:%v", err)
+			log.Errorf("app run err:%v", err)
 		}
 		<-finishCh
 		return nil

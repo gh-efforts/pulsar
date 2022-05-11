@@ -2,6 +2,9 @@ package dao
 
 import (
 	"context"
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/bitrainforest/pulsar/internal/helper"
 
@@ -42,8 +45,26 @@ func (appWatch UserAppWatchDaoImpl) FindByAddress(ctx context.Context,
 
 func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
 	address []string) (list []*model.SpecialUserAppWatch, err error) {
-	filter := bson.M{"address": bson.M{"$in": address}}
-	cur, err := appWatch.GetCollection().Find(ctx, filter)
+
+	matchStage := bson.D{{Key: "$match", Value: bson.M{"address": bson.M{"$in": address}}}}
+	groupStage := bson.D{{Key: "$group", Value: bson.D{
+		{Key: "_id", Value: bson.D{
+			{Key: "app_id", Value: "$app_id"},
+		}},
+		{Key: "app_id", Value: bson.D{
+			{Key: "$first", Value: "$app_id"},
+		}},
+	}},
+	}
+	projectStage := bson.D{
+		{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 0},
+			{Key: "app_id", Value: 1},
+		}},
+	}
+	opts := options.Aggregate().SetMaxTime(15 * time.Second)
+	cur, err := appWatch.GetCollection().Aggregate(ctx,
+		mongo.Pipeline{matchStage, groupStage, projectStage}, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +82,10 @@ func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
 func (appWatch UserAppWatchDaoImpl) Create(ctx context.Context,
 	appWatchModel *model.UserAppWatch) (err error) {
 	_, err = appWatch.GetCollection().InsertOne(ctx, appWatchModel)
+	// if err is mongo duplicate key error, it means the user has already watched the app
+	if err != nil && mongo.IsDuplicateKeyError(err) {
+		err = nil
+	}
 	return
 }
 
