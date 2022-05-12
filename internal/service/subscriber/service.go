@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/panjf2000/ants/v2"
+
 	"github.com/bitrainforest/filmeta-hic/core/threading"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -18,14 +20,18 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type (
-	Core struct {
-		opts      *Opts
-		connect   *nats.Conn
-		msgBuffer chan *model.Trading
-		lock      sync.Mutex
-	}
+const (
+	DefaultWorkPoolNum = 100
 )
+
+type Core struct {
+	opts      *Opts
+	connect   *nats.Conn
+	closed    bool
+	msgBuffer chan *model.Trading
+	lock      sync.Mutex
+	workPool  *ants.Pool
+}
 
 func NewCore(uri string, fns ...OptFn) (*Core, error) {
 	opts := defaultOpts()
@@ -46,7 +52,16 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 	}
 
 	core := &Core{opts: &opts, lock: sync.Mutex{}}
+	// msgBuffer
 	core.msgBuffer = make(chan *model.Trading, opts.msgBuffer)
+
+	var (
+		err error
+	)
+	if core.workPool, err = ants.NewPool(DefaultWorkPoolNum); err != nil {
+		return nil, err
+	}
+
 	connect, err := nats.Connect(uri)
 	if err != nil {
 		return nil, err
@@ -56,7 +71,6 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 		core.processing()
 	})
 	return core, nil
-	// todo start a g to receive messages
 }
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
@@ -66,7 +80,6 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		MCid:   mcid,
 		Msg:    msg,
 	}
-
 	// todo to Confirm whether the call is asynchronous or synchronous
 	select {
 	case <-ctx.Done():
@@ -80,19 +93,15 @@ func (core *Core) processing() {
 	markCache := core.opts.addressMarkCache
 	for msg := range core.msgBuffer {
 		ctx := context.Background()
-
 		to := msg.Msg.To.String()
 		from := msg.Msg.From.String()
 
-		// we should to cache the subList
-		// todo cache
 		if !markCache.ExistAddress(ctx, to) &&
 			!markCache.ExistAddress(ctx, from) {
 			log.Infof("both address from %v,to %v have  no sub:", from, to)
 			continue
 		}
 
-		// todo de-duplication
 		list, err := core.opts.appWatchDao.FindByAddresses(context.Background(),
 			[]string{from, to})
 		if err != nil {
@@ -109,16 +118,17 @@ func (core *Core) processing() {
 			continue
 		}
 
-		// we are not sure how many subscribers to sub this address,
-		// so we do that can't control the number of goroutines
-		// todo work pool to control the number of goroutines
+		publishFn := func(subject string, msgByte []byte) error {
+			return core.connect.Publish(subject, msgByte)
+		}
 		var wg sync.WaitGroup
+
 		for i := range list {
 			wg.Add(1)
 			subject := list[i].AppId
-			threading.GoSafe(func() {
+			_ = core.workPool.Submit(func() { //nolint
 				defer wg.Done()
-				if err = core.connect.Publish(subject, msgByte); err != nil {
+				if err := publishFn(subject, msgByte); err != nil {
 					log.Errorf("[core.processing] publish msg:%+v err: %s", msg, err)
 				}
 			})
@@ -127,11 +137,21 @@ func (core *Core) processing() {
 	}
 }
 
+func (core *Core) IsClosed() bool {
+	return core.closed
+}
+
 func (core *Core) Stop() {
 	core.lock.Lock()
 	defer core.lock.Unlock()
-	if core.connect.IsClosed() {
+
+	if core.IsClosed() {
 		return
 	}
+	core.closed = true
+
+	// work pol release
+	core.workPool.Release()
+	// nats.Conn close
 	core.connect.Close()
 }
