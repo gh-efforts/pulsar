@@ -2,6 +2,8 @@ package commands
 
 import (
 	"github.com/bitrainforest/pulsar/api/middleware"
+	"github.com/bitrainforest/pulsar/internal/dao"
+	"github.com/bitrainforest/pulsar/internal/service/subscriber"
 
 	"github.com/bitrainforest/pulsar/api/router"
 
@@ -49,30 +51,39 @@ var (
 		Aliases: []string{"n"},
 		Flags: flagSet(
 			clientAPIFlagSet),
-		Before: func(context *cli.Context) error {
-			MustLoadConf()
-			return BeforeDaemon(context)
-		},
 		Action: func(context *cli.Context) error {
+			// load conf
+			MustLoadConf()
+
 			var (
 				opts     []kratos.Option
 				httpOpts []http.ServerOption
 			)
-			httpOpts = append(httpOpts, http.Address(fixedEnv.HttpAddr))
 
-			// set up http service
+			//default opts
+			opts = append(opts, log.LoggerKratosOption(ServiceName, DefaultVersion))
+
+			// http service
+			httpOpts = append(httpOpts, http.Address(fixedEnv.HttpAddr))
 			httpServer := httpservice.GetHttpServer(func(engine *gin.Engine) {
 				router.Register(engine)
 			}, nil, httpOpts...)
 
-			opts = append(opts, log.LoggerKratosOption(ServiceName, DefaultVersion))
-			opts = append(opts, kratos.Server(httpServer))
+			//  daemon service
+			core, err := subscriber.NewCore("",
+				subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
+			assert.CheckErr(err)
+			daemon := NewDaemon(context, core)
 
+			opts = append(opts, kratos.Server(httpServer, daemon))
+
+			// init kratos core
 			app := kratos.New(opts...)
+
+			// run
 			if err := app.Run(); err != nil {
 				log.Errorf("app run err:%v", err)
 			}
-			<-finishCh
 			return nil
 		},
 	}

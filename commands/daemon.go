@@ -8,10 +8,6 @@ import (
 
 	log2 "github.com/bitrainforest/filmeta-hic/core/log"
 
-	"github.com/bitrainforest/pulsar/internal/dao"
-
-	"github.com/bitrainforest/filmeta-hic/core/assert"
-
 	"github.com/bitrainforest/pulsar/internal/service/subscriber"
 
 	metricsprometheus "github.com/ipfs/go-metrics-prometheus"
@@ -39,58 +35,26 @@ import (
 	"golang.org/x/xerrors"
 )
 
-var finishCh <-chan struct{}
-
-var clientAPIFlags struct {
-	apiAddr  string
-	apiToken string
+type Daemon struct {
+	cliCtx   *cli.Context
+	finishCh <-chan struct{}
+	sub      *subscriber.Core
 }
 
-var repoFlag = &cli.StringFlag{
-	Name:    "repo",
-	Usage:   "Specify path where bony should store chain state.",
-	EnvVars: []string{"BONY_REPO"},
-	Value:   "~/.pulsar",
+func NewDaemon(cliCtx *cli.Context, sub *subscriber.Core) *Daemon {
+	return &Daemon{
+		cliCtx:   cliCtx,
+		finishCh: make(chan struct{}),
+		sub:      sub,
+	}
 }
 
-// clientAPIFlagSet are used by commands that act as clients of a daemon's API
-var clientAPIFlagSet = []cli.Flag{
-	repoFlag,
-	&cli.BoolFlag{
-		Name: "bootstrap",
-		// TODO: usage description
-		EnvVars:     []string{"BONY_BOOTSTRAP"},
-		Value:       true,
-		Destination: &daemonFlags.bootstrap,
-		Hidden:      true, // hide until we decide if we want to keep this.
-	},
-	&cli.StringFlag{
-		Name:        "config",
-		Usage:       "Specify path of config file to use.",
-		EnvVars:     []string{"BONY_CONFIG"},
-		Destination: &daemonFlags.config,
-	},
-}
-
-type daemonOpts struct {
-	bootstrap           bool // TODO: is this necessary - do we want to run bony in this mode?
-	config              string
-	genesis             string
-	archive             bool
-	archiveModelStorage string
-	archiveFileStorage  string
-}
-
-var daemonFlags daemonOpts
-
-func BeforeDaemon(c *cli.Context) error {
-
+func (d *Daemon) Start(ctx context.Context) error {
+	c := d.cliCtx
 	isLite := c.Bool("lite")
 	log2.SetUp("pulsar")
-
 	lotuslog.SetupLogLevels()
 
-	ctx := context.Background()
 	var err error
 	repoPath, err := homedir.Expand(c.String("repo"))
 	if err != nil {
@@ -114,9 +78,6 @@ func BeforeDaemon(c *cli.Context) error {
 			log.Infof("bony config: %s", daemonFlags.config)
 		}
 	}
-	//if err := config.EnsureExists(daemonFlags.config); err != nil {
-	//	return xerrors.Errorf("ensuring config is present at %q: %w", daemonFlags.config, err)
-	//}
 
 	r.SetConfigPath(daemonFlags.config)
 
@@ -160,32 +121,23 @@ func BeforeDaemon(c *cli.Context) error {
 		liteModeDeps = node.Override(new(api.Gateway), gapi)
 	}
 
-	// some libraries like ipfs/go-ds-measure and ipfs/go-ipfs-blockstore
-	// use ipfs/go-metrics-interface. This injects a Prometheus exporter
-	// for those. Metrics are exported to the default registry.
 	if err := metricsprometheus.Inject(); err != nil { //nolint
 		log.Warnf("unable to inject prometheus ipfs/go-metrics exporter; some metrics will be unavailable; err: %s", err)
 	}
 
 	var api api.FullNode
 
-	//todo nats service url
-	ownExecMonitor, err := subscriber.NewCore("",
-		subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
-	assert.CheckErr(err)
-
 	stop, err := node.New(ctx,
 		// Start Sentinel Dep injection
 		node.FullAPI(&api, node.Lite(isLite)),
 
-		//node.Override(new(dtypes.Bootstrapper), isBootstrapper),
 		node.Override(new(dtypes.ShutdownChan), shutdown),
 		node.Base(),
 		node.Repo(r),
 		node.Override(new(*stmgr.StateManager), modules.StateManager),
 		// replace with our own exec monitor
 		//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
-		node.Override(new(stmgr.ExecMonitor), ownExecMonitor),
+		node.Override(new(stmgr.ExecMonitor), d.sub),
 
 		// End custom StateManager injection.
 		genesis,
@@ -247,20 +199,15 @@ func BeforeDaemon(c *cli.Context) error {
 	}
 
 	// Monitor for shutdown.
-	finishCh = node.MonitorShutdown(shutdown,
+	d.finishCh = node.MonitorShutdown(shutdown,
 		node.ShutdownHandler{Component: "rpc server", StopFunc: rpcStopper},
 		node.ShutdownHandler{Component: "node", StopFunc: stop},
 	)
-	//<-finishCh // fires when shutdown is complete.
 	return nil
 }
 
-func flagSet(fs ...[]cli.Flag) []cli.Flag {
-	var flags []cli.Flag
-
-	for _, f := range fs {
-		flags = append(flags, f...)
-	}
-
-	return flags
+func (d *Daemon) Stop(ctx context.Context) error {
+	<-d.finishCh
+	d.sub.Stop()
+	return nil
 }
