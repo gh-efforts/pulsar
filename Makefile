@@ -51,7 +51,7 @@ CLEAN+=build/.update-modules
 # tools
 toolspath:=support/tools
 
-ldflags=-X=bony/version.GitVersion=$(GITVERSION)
+ldflags=-X=pulsar/version.GitVersion=$(GITVERSION)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
 endif
@@ -75,14 +75,6 @@ dockerup:
 dockerdown:
 	docker-compose down
 
-# testfull runs all tests
-.PHONY: testfull
-testfull: build
-	docker-compose up -d
-	sleep 2
-	./bony migrate --latest
-	-TZ= PGSSLMODE=disable go test ./... -v
-	docker-compose down
 
 # testshort runs tests that don't require external dependencies such as postgres or redis
 .PHONY: testshort
@@ -195,6 +187,7 @@ docker-mainnet-dev: docker-build-image-template
 docker-mainnet-dev-push: docker-mainnet-dev docker-tag-and-push-template
 
 # CALIBNET
+# CALIBNET
 .PHONY: docker-calibnet
 docker-calibnet: BONY_DOCKER_FILE ?= Dockerfile
 docker-calibnet: BONY_NETWORK_TARGET ?= calibnet
@@ -292,7 +285,7 @@ docker-2k-dev-push: docker-2k-dev docker-tag-and-push-template
 
 .PHONY: docker-build-image-template
 docker-build-image-template:
-	@echo "Building bony docker image for '$(BONY_NETWORK_TARGET)'..."
+	@echo "Building pulsar docker image for '$(BONY_NETWORK_TARGET)'..."
 	docker build -f $(BONY_DOCKER_FILE) \
 		--build-arg BONY_NETWORK_TARGET=$(BONY_NETWORK_TARGET) \
 		--build-arg GO_BUILD_IMAGE=$(GO_BUILD_IMAGE) \
@@ -323,9 +316,6 @@ endif
 lint: checklint
 	golangci-lint run --skip-dirs-use-default
 
-
-.PHONY: deps
-deps: $(BUILD_DEPS)
 
 
 .PHONY: generate

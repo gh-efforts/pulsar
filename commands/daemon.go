@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	log2 "github.com/bitrainforest/filmeta-hic/core/log"
-
 	"github.com/bitrainforest/pulsar/internal/service/subscriber"
 
 	metricsprometheus "github.com/ipfs/go-metrics-prometheus"
@@ -52,7 +50,6 @@ func NewDaemon(cliCtx *cli.Context, sub *subscriber.Core) *Daemon {
 func (d *Daemon) Start(ctx context.Context) error {
 	c := d.cliCtx
 	isLite := c.Bool("lite")
-	log2.SetUp("pulsar")
 	lotuslog.SetupLogLevels()
 
 	var err error

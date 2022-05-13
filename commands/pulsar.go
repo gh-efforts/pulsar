@@ -70,6 +70,7 @@ var (
 			}, nil, httpOpts...)
 
 			//  daemon service
+			// todo add nats uri
 			core, err := subscriber.NewCore("",
 				subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
 			assert.CheckErr(err)
@@ -91,7 +92,7 @@ var (
 
 func MustLoadConf() {
 	// log
-	log.SetUp(ServiceName)
+	log.SetUp(ServiceName, log.LevelInfo)
 	var (
 		err error
 	)
