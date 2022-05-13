@@ -1,0 +1,7 @@
+.chglog
+/.circleci
+/.github
+/build/*
+/Dockerfile*
+/docker-compose*
+/pulsar

@@ -1,18 +1,21 @@
 FROM golang:1.18.0 AS builder
 
-RUN apt-get update
 
-RUN apt-get install -y \
-  hwloc \
-  jq \
-  libhwloc-dev \
-  mesa-opencl-icd \
-  ocl-icd-opencl-dev
+RUN apt-get update && apt-get install -y ca-certificates build-essential clang ocl-icd-opencl-dev ocl-icd-libopencl1 jq libhwloc-dev
+
+
+#RUN apt-get update
+#RUN apt-get install -y \
+#  hwloc \
+#  jq \
+#  libhwloc-dev \
+#  mesa-opencl-icd \
+#  ocl-icd-opencl-dev
 
 WORKDIR /go/src/pulsar
 COPY . /go/src/pulsar
 
-
+# RUN make clean deps
 RUN make deps
 RUN go mod download
 
