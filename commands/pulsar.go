@@ -71,7 +71,8 @@ var (
 
 			//  daemon service
 			// todo add nats uri
-			core, err := subscriber.NewCore("",
+			natsConf := MustLoadNats(conf)
+			core, err := subscriber.NewCore(natsConf.GetUri(),
 				subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
 			assert.CheckErr(err)
 			daemon := NewDaemon(context, core)

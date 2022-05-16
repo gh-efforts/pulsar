@@ -20,6 +20,9 @@ RUN make deps
 RUN GOPROXY=https://goproxy.cn
 
 
+ENV LIBRARY_PATH /opt/homebrew/lib
+ENV FFI_BUILD_FROM_SOURCE 1
+ENV PATH ="(brew --prefix coreutils)/libexec/gnubin:/usr/local/bin:$PATH"
 
 ARG BONY_NETWORK_TARGET=calibnet
 
