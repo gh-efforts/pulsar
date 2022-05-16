@@ -1,7 +1,4 @@
 
-[submodule "extern/model"]
-	path = extern/model
-	url = https://github.com/BitRainforest/filmeta-model.git
 [submodule "extern/filecoin-ffi"]
 	path = extern/filecoin-ffi
 	url = https://github.com/filecoin-project/filecoin-ffi.git
