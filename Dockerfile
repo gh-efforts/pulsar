@@ -18,8 +18,6 @@ COPY . /go/src/pulsar
 # RUN make clean deps
 RUN make deps
 RUN GOPROXY=https://goproxy.cn
-#RUN go mod download
-
 
 
 
@@ -44,6 +42,6 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/libhwloc.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libnuma.so* /lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libltdl.so* /lib/
 
-EXPOSE 8088
+EXPOSE 8078
 
 ENTRYPOINT ["/usr/bin/pulsar","http"]
