@@ -2,8 +2,9 @@ package subscriber
 
 import (
 	"context"
-	"fmt"
 	"sync"
+
+	"github.com/bitrainforest/pulsar/internal/utils/locker"
 
 	"github.com/panjf2000/ants/v2"
 
@@ -74,7 +75,17 @@ func NewCore(uri string, fns ...OptFn) (*Core, error) {
 }
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
-	fmt.Println("[Core MessageApplied] message:", mcid, msg.From.String(), msg.From.String())
+	log.Infof("[Core MessageApplied] message:%v, from:%v,to:%v", mcid, msg.From.String(), msg.From.String())
+	// todo add lock time
+	ok, err := locker.NewRedisLock(ctx, mcid.String(), 20).Acquire(ctx)
+	if err != nil {
+		log.Errorf("[MessageApplied] lock message %s failed: %v", mcid.String(), err)
+		return err
+	}
+	if !ok {
+		log.Infof("[MessageApplied] message %s is locked", mcid.String())
+		return nil
+	}
 	trading := model.Trading{
 		TipSet: ts,
 		MCid:   mcid,

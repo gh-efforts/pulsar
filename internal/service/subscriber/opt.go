@@ -17,9 +17,8 @@ type (
 	OptFn func(*Opts)
 
 	Opts struct {
-		natsUri   string
-		msgBuffer int64
-		//userAppDao dao.UserAppDao
+		natsUri          string
+		msgBuffer        int64
 		appWatchDao      dao.UserAppWatchDao
 		addressMarkCache cache.AddressMark
 	}

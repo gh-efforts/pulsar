@@ -17,9 +17,9 @@ COPY . /go/src/pulsar
 
 # RUN make clean deps
 RUN make deps
-RUN go mod download
+RUN GOPROXY=https://goproxy.cn
+#RUN go mod download
 
-# RUN GOPROXY=https://goproxy.cn
 
 
 
