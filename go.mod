@@ -3,6 +3,7 @@ module github.com/bitrainforest/pulsar
 go 1.18
 
 require (
+	github.com/BurntSushi/toml v1.1.0
 	github.com/appleboy/gin-jwt/v2 v2.8.0
 	github.com/bitrainforest/filmeta-hic v0.0.0-20220513063256-73903f6f1e88
 	github.com/filecoin-project/go-jsonrpc v0.1.5
@@ -13,6 +14,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/wire v0.5.0
 	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.5.0
@@ -24,11 +26,11 @@ require (
 	go.mongodb.org/mongo-driver v1.9.0
 	go.uber.org/fx v1.15.0
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
+	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
-	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/GeertJohan/go.incremental v1.0.0 // indirect
 	github.com/GeertJohan/go.rice v1.0.2 // indirect
@@ -178,7 +180,6 @@ require (
 	github.com/ipfs/go-ipld-legacy v0.1.1 // indirect
 	github.com/ipfs/go-ipns v0.1.2 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
-	github.com/ipfs/go-log/v2 v2.5.0 // indirect
 	github.com/ipfs/go-merkledag v0.5.1 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/ipfs/go-path v0.2.1 // indirect
@@ -349,7 +350,6 @@ require (
 	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72 // indirect
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
