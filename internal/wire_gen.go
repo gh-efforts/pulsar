@@ -16,8 +16,9 @@ import (
 
 func NewServices() Services {
 	userAppDao := dao.NewUserAppDao()
-	userAppWatchDao := dao.NewUserAppWatchDao()
-	userAppService := service.NewUserAppService(userAppDao, userAppWatchDao)
+	userAppSubDao := dao.NewUserAppSubDao()
+	userAppSubAllDao := dao.NewUserAppSubAllDao()
+	userAppService := service.NewUserAppService(userAppDao, userAppSubDao, userAppSubAllDao)
 	services := Services{
 		UserAppService: userAppService,
 	}

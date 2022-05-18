@@ -36,14 +36,14 @@ import (
 type Daemon struct {
 	cliCtx   *cli.Context
 	finishCh <-chan struct{}
-	sub      *subscriber.Core
+	core     *subscriber.Core
 }
 
 func NewDaemon(cliCtx *cli.Context, sub *subscriber.Core) *Daemon {
 	return &Daemon{
 		cliCtx:   cliCtx,
 		finishCh: make(chan struct{}),
-		sub:      sub,
+		core:     sub,
 	}
 }
 
@@ -134,7 +134,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 		node.Override(new(*stmgr.StateManager), modules.StateManager),
 		// replace with our own exec monitor
 		//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
-		node.Override(new(stmgr.ExecMonitor), d.sub),
+		node.Override(new(stmgr.ExecMonitor), d.core),
 
 		// End custom StateManager injection.
 		genesis,
@@ -154,6 +154,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 		),
 	)
 	if err != nil {
+		log.Infof("node.New error: %s", err)
 		return xerrors.Errorf("initializing node: %w", err) //nolint
 	}
 
@@ -205,6 +206,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 func (d *Daemon) Stop(ctx context.Context) error {
 	<-d.finishCh
-	d.sub.Stop()
+	d.core.Stop()
 	return nil
 }

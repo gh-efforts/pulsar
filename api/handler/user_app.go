@@ -37,7 +37,7 @@ func (userApp UserAppHandler) Apply(c *gin.Context) response.Response {
 	return codex.OK.WithData(resp)
 }
 
-func (userApp UserAppHandler) GetAppWatch(ctx context.Context, appId, address string, fn func(model.UserAppWatch) response.Response) response.Response {
+func (userApp UserAppHandler) GetAppWatch(ctx context.Context, appId, address string, fn func(model.UserAppSub) response.Response) response.Response {
 	userWatch, err := userApp.UserAppService.GetAppWatchByAppId(ctx, appId, address)
 	if err != nil {
 		return codex.ErrService.FormatErrMsg(err)
@@ -73,8 +73,27 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 		return codex.ErrParamIllegal.FormatErrMsg(err)
 	}
 
+	// the appid want to subscribe all address
+	if param.IsAll() {
+		subAll, err := userApp.UserAppService.GetWatchAllByAppId(c, appId)
+		if err != nil {
+			return codex.ErrService.FormatErrMsg(err)
+		}
+		if !subAll.IsEmpty() {
+			return codex.OK
+		}
+		subAll = model.NewDefaultAppSubAll()
+		subAll.AppId = appId
+		if err := userApp.UserAppService.CreateSubAll(c, subAll); err != nil {
+			return codex.ErrService.FormatErrMsg(err)
+		}
+		return codex.OK
+	}
+
+	// other, subscribe some address
+
 	if respErr := userApp.GetAppWatch(c, appId,
-		param.Address, func(userWatch model.UserAppWatch) response.Response {
+		param.Address, func(userWatch model.UserAppSub) response.Response {
 			if !userWatch.IsEmpty() {
 				return codex.ErrUserAppExist
 			}
@@ -83,7 +102,7 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 		return respErr
 	}
 
-	appWatchModel := model.NewDefaultAppWatch()
+	appWatchModel := model.NewDefaultAppSub()
 	appWatchModel.AppId = appId
 	appWatchModel.Address = param.Address
 	if err := userApp.UserAppService.AddSubAddress(c, appWatchModel); err != nil {
@@ -103,16 +122,14 @@ func (userApp UserAppHandler) CancelSub(c *gin.Context) response.Response {
 	if err != nil {
 		return codex.ErrService.FormatErrMsg(err)
 	}
-
-	if respErr := userApp.GetAppWatch(c, appId,
-		param.Address, func(userWatch model.UserAppWatch) response.Response {
-			if userWatch.IsEmpty() {
-				return codex.ErrUserAppNotExist
-			}
-			return nil
-		}); respErr != nil {
-		return respErr
+	// the appid want to cancel all address
+	if param.IsAll() {
+		if err := userApp.UserAppService.CancelAll(c, appId); err != nil {
+			return codex.ErrService.FormatErrMsg(err)
+		}
+		return codex.OK
 	}
+
 	if err := userApp.UserAppService.CancelSubAddress(c, appId, param.Address); err != nil {
 		return codex.ErrService.FormatErrMsg(err)
 	}
