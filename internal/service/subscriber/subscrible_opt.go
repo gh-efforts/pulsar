@@ -5,36 +5,34 @@ import (
 
 	"github.com/bitrainforest/pulsar/internal/cache"
 	"github.com/bitrainforest/pulsar/internal/dao"
-	"github.com/nats-io/nats.go"
 )
 
 const (
-	DefaultMsgBuffer = 300
-	MaxMsgBuffer     = 1000
+	DefaultWorkPoolNum = 500
+	MaxWorkPoolNum     = 1000
 )
 
 type (
-	OptFn func(*Opts)
-
-	Opts struct {
-		natsUri          string
-		msgBuffer        int64
-		appWatchDao      dao.UserAppWatchDao
+	OptFn func(opts *Opts)
+	Opts  struct {
+		workPoolNum      int64
+		appSubDao        dao.UserAppSubDao
 		addressMarkCache cache.AddressMark
 	}
 )
 
 func defaultOpts() Opts {
 	return Opts{
-		msgBuffer: DefaultMsgBuffer, natsUri: nats.DefaultURL,
 		addressMarkCache: cache.NewAddressMark(context.Background()),
+		appSubDao:        dao.NewUserAppSubDao(),
+		workPoolNum:      DefaultWorkPoolNum,
 	}
 }
 
-func WithUserAppWatchDao(appWatch dao.UserAppWatchDao) OptFn {
+func WithUserAppSubDao(appSub dao.UserAppSubDao) OptFn {
 	return func(opts *Opts) {
-		if appWatch != nil {
-			opts.appWatchDao = appWatch
+		if appSub != nil {
+			opts.appSubDao = appSub
 		}
 	}
 }
@@ -47,8 +45,8 @@ func WithAddressMarkCache(mark cache.AddressMark) OptFn {
 	}
 }
 
-func WithMsgBuffer(buffer int64) OptFn {
+func WithWorkPoolNum(num int64) OptFn {
 	return func(opts *Opts) {
-		opts.msgBuffer = buffer
+		opts.workPoolNum = num
 	}
 }

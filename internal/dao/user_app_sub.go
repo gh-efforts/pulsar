@@ -6,15 +6,15 @@ import (
 	"github.com/bitrainforest/pulsar/internal/model"
 )
 
-type UserAppWatchDao interface {
+type UserAppSubDao interface {
 	FindByAddress(ctx context.Context,
-		address string) (list []*model.UserAppWatch, err error)
+		address string) (list []*model.UserAppSub, err error)
 	FindByAddresses(ctx context.Context,
-		address []string) (list []*model.SpecialUserAppWatch, err error)
+		address []string) (list []*model.SpecialUserAppSub, err error)
 	Create(ctx context.Context,
-		appWatchModel *model.UserAppWatch) (err error)
+		appWatchModel *model.UserAppSub) (err error)
 	GetByAppId(ctx context.Context,
-		appId, address string) (appWatchModel model.UserAppWatch, err error)
+		appId, address string) (appWatchModel model.UserAppSub, err error)
 	Cancel(ctx context.Context,
 		appId, address string) (err error)
 }

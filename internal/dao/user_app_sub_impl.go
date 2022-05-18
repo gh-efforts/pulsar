@@ -14,26 +14,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type UserAppWatchDaoImpl struct {
+type UserAppSubDaoImpl struct {
 }
 
-func NewUserAppWatchDao() UserAppWatchDao {
-	return &UserAppWatchDaoImpl{}
+func NewUserAppSubDao() UserAppSubDao {
+	return &UserAppSubDaoImpl{}
 }
 
-func (appWatch UserAppWatchDaoImpl) GetCollection() *mongo.Collection {
-	return GetMongoDatabase().Collection("user_app_watch")
+func (appWatch UserAppSubDaoImpl) GetCollection() *mongo.Collection {
+	return GetMongoDatabase().Collection("user_app_sub")
 }
 
-func (appWatch UserAppWatchDaoImpl) FindByAddress(ctx context.Context,
-	address string) (list []*model.UserAppWatch, err error) {
+func (appWatch UserAppSubDaoImpl) FindByAddress(ctx context.Context,
+	address string) (list []*model.UserAppSub, err error) {
 	filter := bson.M{"address": address}
 	cur, err := appWatch.GetCollection().Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 	for cur.Next(ctx) {
-		var appWatch model.UserAppWatch
+		var appWatch model.UserAppSub
 		err := cur.Decode(&appWatch)
 		if err != nil {
 			return nil, err
@@ -43,8 +43,8 @@ func (appWatch UserAppWatchDaoImpl) FindByAddress(ctx context.Context,
 	return
 }
 
-func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
-	address []string) (list []*model.SpecialUserAppWatch, err error) {
+func (appWatch UserAppSubDaoImpl) FindByAddresses(ctx context.Context,
+	address []string) (list []*model.SpecialUserAppSub, err error) {
 
 	matchStage := bson.D{{Key: "$match", Value: bson.M{"address": bson.M{"$in": address}}}}
 	groupStage := bson.D{{Key: "$group", Value: bson.D{
@@ -69,7 +69,7 @@ func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
 		return nil, err
 	}
 	for cur.Next(ctx) {
-		var appWatch model.SpecialUserAppWatch
+		var appWatch model.SpecialUserAppSub
 		err := cur.Decode(&appWatch)
 		if err != nil {
 			return nil, err
@@ -79,8 +79,8 @@ func (appWatch UserAppWatchDaoImpl) FindByAddresses(ctx context.Context,
 	return
 }
 
-func (appWatch UserAppWatchDaoImpl) Create(ctx context.Context,
-	appWatchModel *model.UserAppWatch) (err error) {
+func (appWatch UserAppSubDaoImpl) Create(ctx context.Context,
+	appWatchModel *model.UserAppSub) (err error) {
 	_, err = appWatch.GetCollection().InsertOne(ctx, appWatchModel)
 	// if err is mongo duplicate key error, it means the user has already watched the app
 	if err != nil && mongo.IsDuplicateKeyError(err) {
@@ -89,15 +89,16 @@ func (appWatch UserAppWatchDaoImpl) Create(ctx context.Context,
 	return
 }
 
-func (appWatch UserAppWatchDaoImpl) Cancel(ctx context.Context,
+func (appWatch UserAppSubDaoImpl) Cancel(ctx context.Context,
 	appId, address string) (err error) {
 	filter := bson.M{"app_id": appId, "address": address}
 	_, err = appWatch.GetCollection().DeleteOne(ctx, filter)
+	err = helper.WarpMongoErr(err)
 	return
 }
 
-func (appWatch UserAppWatchDaoImpl) GetByAppId(ctx context.Context,
-	appId, address string) (appWatchModel model.UserAppWatch, err error) {
+func (appWatch UserAppSubDaoImpl) GetByAppId(ctx context.Context,
+	appId, address string) (appWatchModel model.UserAppSub, err error) {
 	filter := bson.M{"app_id": appId, "address": address}
 	result := appWatch.GetCollection().FindOne(ctx, filter)
 	err = helper.WarpMongoErr(result.Decode(&appWatchModel))

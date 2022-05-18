@@ -134,8 +134,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bep/debounce v1.2.0 h1:wXds8Kq8qRfwAOpAxHrJDbCXgC5aHSzgQb/0gKsHQqo=
 github.com/bep/debounce v1.2.0/go.mod h1:H8yggRPQKLUhUoqrJC1bO2xNya7vanpDl7xR3ISbCJ0=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220513063256-73903f6f1e88 h1:iX3K1+43JLuBkp09ARO/8LZJkXrC7opa7FmUudNdZsE=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220513063256-73903f6f1e88/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
+github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480 h1:+XlN6mYqamnBy81HcYe1FFwia+m6AxoYgyxOvQw0hR0=
+github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bradfitz/go-smtpd v0.0.0-20170404230938-deb6d6237625/go.mod h1:HYsPBTaaSFSlLx/70C2HPIMNZpVV8+vt/A+FMnYP11g=
 github.com/briandowns/spinner v1.11.1/go.mod h1:QOuQk7x+EaDASo80FEXwlwiA+j/PPIcX3FScO+3/ZPQ=
@@ -1884,6 +1884,8 @@ github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrf
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
+github.com/smallnest/chanx v1.0.0 h1:xd03MIQ0+doMOPQz/RQfHOTEeBTETputo9YZASCE/Os=
+github.com/smallnest/chanx v1.0.0/go.mod h1:LH2uJLgza9WaWa4MgunOQERqM3t2ryDEq9LkPBlEfWM=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/assertions v1.0.0/go.mod h1:kHHU4qYBaI3q23Pp3VPrmWhuIUrLW/7eUrw0BU5VaoM=
 github.com/smartystreets/assertions v1.0.1 h1:voD4ITNjPL5jjBfgR/r8fPIIBrliWrWHeiJApdr3r4w=

@@ -1,17 +1,14 @@
 package commands
 
 import (
-	"github.com/bitrainforest/pulsar/api/middleware"
-	"github.com/bitrainforest/pulsar/internal/dao"
-	"github.com/bitrainforest/pulsar/internal/service/subscriber"
-
-	"github.com/bitrainforest/pulsar/api/router"
-
 	"github.com/bitrainforest/filmeta-hic/core/httpservice"
-
 	"github.com/bitrainforest/filmeta-hic/core/log"
-
 	"github.com/bitrainforest/filmeta-hic/core/store"
+	"github.com/bitrainforest/pulsar/api/middleware"
+	"github.com/bitrainforest/pulsar/api/router"
+	"github.com/bitrainforest/pulsar/internal/dao"
+	"github.com/bitrainforest/pulsar/internal/model"
+	"github.com/bitrainforest/pulsar/internal/service/subscriber"
 
 	"github.com/bitrainforest/filmeta-hic/core/config"
 
@@ -70,14 +67,26 @@ var (
 			}, nil, httpOpts...)
 
 			//  daemon service
-			// todo add nats uri
-			natsConf := MustLoadNats(conf)
-			core, err := subscriber.NewCore(natsConf.GetUri(),
-				subscriber.WithUserAppWatchDao(dao.NewUserAppWatchDao()))
-			assert.CheckErr(err)
-			daemon := NewDaemon(context, core)
 
+			var (
+				appIds []string
+			)
+			subAll := dao.NewUserAppSubAllDao()
+			list, err := subAll.ListByAllType(context.Context, model.DefaultAllType)
+			assert.CheckErr(err)
+			for _, v := range list {
+				appIds = append(appIds, v.AppId)
+			}
+			natsConf := MustLoadNats(conf)
+			notify, err := subscriber.NewNotify(natsConf.GetUri())
+			assert.CheckErr(err)
+			sub, err := subscriber.NewSub(appIds, notify)
+			assert.CheckErr(err)
+
+			core := subscriber.NewCore(sub)
+			daemon := NewDaemon(context, core)
 			opts = append(opts, kratos.Server(httpServer, daemon))
+			//go TestMessage(core)
 
 			// init kratos core
 			app := kratos.New(opts...)
@@ -122,3 +131,28 @@ func MustLoadConf() {
 	// mustLoadRedis
 	store.MustLoadRedis(conf)
 }
+
+//func TestMessage(core *subscriber.Core) {
+//	time.Sleep(5 * time.Second)
+//
+//	for {
+//		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+//		for i := 0; i < 300; i++ {
+//			go func() {
+//				tipSet := &types.TipSet{}
+//				a := cid.Cid{}
+//				//randomCid, err := cid.Decode("bafy2bzacecu7n7wbtogznrtuuvf73dsz7wasgyneqasksdblxupnyovmtwxx")
+//				//if err != nil {
+//				//	log.Infof("[TestMessage]err:%v", err)
+//				//	continue
+//				//}
+//				msg := types.Message{
+//					Version: 1,
+//					To:      builtin.ReserveAddress,
+//					From:    builtin.RootVerifierAddress,
+//				}
+//				core.MessageApplied(context.Background(), tipSet, a, &msg, nil, true)
+//			}()
+//		}
+//	}
+//}

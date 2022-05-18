@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type UserAppWatch struct {
+type UserAppSub struct {
 	AppId      string `bson:"app_id"`
 	Address    string `bson:"address"`
 	UpdateTime int64  `bson:"update_time"`
@@ -10,20 +10,20 @@ type UserAppWatch struct {
 	State      int8   `bson:"state"`
 }
 
-type SpecialUserAppWatch struct {
+type SpecialUserAppSub struct {
 	AppId   string `bson:"app_id"`
 	Address string `bson:"address"`
 }
 
-func NewDefaultAppWatch() UserAppWatch {
+func NewDefaultAppSub() UserAppSub {
 	now := time.Now().Unix()
-	return UserAppWatch{
+	return UserAppSub{
 		UpdateTime: now,
 		CreateTime: now,
 		State:      1,
 	}
 }
 
-func (watch *UserAppWatch) IsEmpty() bool {
+func (watch *UserAppSub) IsEmpty() bool {
 	return watch.AppId == ""
 }

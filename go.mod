@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/appleboy/gin-jwt/v2 v2.8.0
-	github.com/bitrainforest/filmeta-hic v0.0.0-20220513063256-73903f6f1e88
+	github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/lotus v1.15.1
@@ -22,6 +22,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
+	github.com/smallnest/chanx v1.0.0
 	github.com/urfave/cli/v2 v2.5.1
 	go.mongodb.org/mongo-driver v1.9.0
 	go.uber.org/fx v1.15.0
@@ -365,5 +366,4 @@ require (
 replace (
 	github.com/BitRainforest/filmeta-model => ./extern/model
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
-
 )
