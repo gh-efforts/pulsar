@@ -95,7 +95,7 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 	if respErr := userApp.GetAppWatch(c, appId,
 		param.Address, func(userWatch model.UserAppSub) response.Response {
 			if !userWatch.IsEmpty() {
-				return codex.ErrUserAppExist
+				return codex.OK
 			}
 			return nil
 		}); respErr != nil {
