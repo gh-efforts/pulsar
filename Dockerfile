@@ -47,4 +47,5 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/libltdl.so* /lib/
 
 EXPOSE 8078
 
-ENTRYPOINT ["/usr/bin/pulsar","http"]
+ENTRYPOINT ["/usr/bin/pulsar"]
+CMD ["--help"]

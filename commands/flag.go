@@ -21,7 +21,7 @@ type daemonOpts struct {
 var repoFlag = &cli.StringFlag{
 	Name:    "repo",
 	Usage:   "Specify path where bony should store chain state.",
-	EnvVars: []string{"BONY_REPO"},
+	EnvVars: []string{"PULSAR_REPO"},
 	Value:   "~/.pulsar",
 }
 
@@ -31,7 +31,7 @@ var clientAPIFlagSet = []cli.Flag{
 	&cli.BoolFlag{
 		Name: "bootstrap",
 		// TODO: usage description
-		EnvVars:     []string{"BONY_BOOTSTRAP"},
+		EnvVars:     []string{"PULSAR_BOOTSTRAP"},
 		Value:       true,
 		Destination: &daemonFlags.bootstrap,
 		Hidden:      true, // hide until we decide if we want to keep this.
@@ -39,7 +39,7 @@ var clientAPIFlagSet = []cli.Flag{
 	&cli.StringFlag{
 		Name:        "config",
 		Usage:       "Specify path of config file to use.",
-		EnvVars:     []string{"BONY_CONFIG"},
+		EnvVars:     []string{"PULSAR_CONFIG"},
 		Destination: &daemonFlags.config,
 	},
 }
