@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/filecoin-project/lotus/node/repo"
+
 	hicLog "github.com/bitrainforest/filmeta-hic/core/log"
 
 	"github.com/bitrainforest/pulsar/commands/util"
@@ -19,7 +21,6 @@ import (
 
 	"github.com/bitrainforest/pulsar/modules"
 
-	"github.com/filecoin-project/lotus/node/repo"
 	"github.com/go-kratos/kratos/v2/log"
 
 	"github.com/filecoin-project/go-paramfetch"
@@ -58,7 +59,12 @@ func (d *Daemon) Start(ctx context.Context) error {
 	lotuslog.SetupLogLevels()
 
 	var err error
-	repoPath, err := homedir.Expand(daemonFlags.repo)
+
+	repoVal := "~/.pulsar"
+	if fixedEnv.Repo != "" {
+		repoVal = fixedEnv.Repo
+	}
+	repoPath, err := homedir.Expand(repoVal)
 	if err != nil {
 		log.Warnw("could not expand repo location", "error", err)
 	} else {
@@ -94,9 +100,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 		}
 	}
 
-	if daemonFlags.importSnapshot != "" {
-		hicLog.Infof("importing snapshot: %s", daemonFlags.importSnapshot)
-		if err = util.ImportChain(ctx, r, daemonFlags.importSnapshot, true); err != nil {
+	if fixedEnv.ImportSnapshot != "" {
+		hicLog.Infof("importing snapshot: %s", fixedEnv.ImportSnapshot)
+		if err = util.ImportChain(ctx, r, fixedEnv.ImportSnapshot, true); err != nil {
 			hicLog.Errorf("importing chain: %v", err)
 			return err
 		}

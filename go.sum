@@ -138,6 +138,8 @@ github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480 h1:+XlN6
 github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
 github.com/bitrainforest/filmeta-hic v0.0.0-20220519021027-da93232d1d30 h1:rGx7XiktVLYd6uKje7itnC4dJn/QoerL9wQZJ1d/2yM=
 github.com/bitrainforest/filmeta-hic v0.0.0-20220519021027-da93232d1d30/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
+github.com/bitrainforest/filmeta-hic v0.0.0-20220519103439-43c6daf8deec h1:b8QyTqosCrdd4MANFwbzNzpuKUl2AC8Gqc6hmTa7V+M=
+github.com/bitrainforest/filmeta-hic v0.0.0-20220519103439-43c6daf8deec/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/bradfitz/go-smtpd v0.0.0-20170404230938-deb6d6237625/go.mod h1:HYsPBTaaSFSlLx/70C2HPIMNZpVV8+vt/A+FMnYP11g=
 github.com/briandowns/spinner v1.11.1/go.mod h1:QOuQk7x+EaDASo80FEXwlwiA+j/PPIcX3FScO+3/ZPQ=
