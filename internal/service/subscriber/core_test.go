@@ -7,7 +7,6 @@ import (
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 
-	"github.com/bitrainforest/filmeta-hic/core/store/redisx"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/ipfs/go-cid"
@@ -71,7 +70,7 @@ func TestNewCore(t *testing.T) {
 		args args
 		want want
 	}{
-		{name: "TestNewCore1", args: args{sub: sub, opts: []CoreOpt{WithMsgLocker(NewMockMagLock())}}, want: want{
+		{name: "TestNewCore1", args: args{sub: sub, opts: []CoreOpt{}}, want: want{
 			closed: false,
 			sub:    sub,
 			chCap:  DefaultWorkPoolNum}},
@@ -86,16 +85,6 @@ func TestNewCore(t *testing.T) {
 			got := NewCore(tt.args.sub, tt.args.opts...)
 			assert.Equal(t, tt.want.closed, got.closed)
 			assert.Equal(t, tt.want.sub, got.sub)
-
-			var (
-				ok bool
-			)
-			if len(tt.args.opts) > 0 {
-				_, ok = got.msgLocker.(*MockMsgLock)
-			} else {
-				_, ok = got.msgLocker.(*redisx.RedisLock)
-			}
-			assert.Equal(t, ok, true)
 			assert.Equal(t, tt.want.chCap, got.sub.workPool.Cap())
 		})
 	}
@@ -207,6 +196,6 @@ func NewTestCore() (*Core, error) {
 	if err != nil {
 		return nil, err
 	}
-	core := NewCore(sub, WithMsgLocker(NewMockMagLock()))
+	core := NewCore(sub)
 	return core, nil
 }

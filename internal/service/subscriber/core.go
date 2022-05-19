@@ -21,28 +21,18 @@ const (
 type CoreOpt func(*Core)
 
 type Core struct {
-	closed    bool
-	done      chan struct{}
-	lock      sync.RWMutex
-	sub       *Subscriber
-	ch        *chanx.UnboundedChan
-	msgLocker MsgLocker
-	wg        sync.WaitGroup
-}
-
-func WithMsgLocker(locker MsgLocker) CoreOpt {
-	return func(core *Core) {
-		if locker != nil {
-			core.msgLocker = locker
-		}
-	}
+	closed bool
+	done   chan struct{}
+	lock   sync.RWMutex
+	sub    *Subscriber
+	ch     *chanx.UnboundedChan
+	wg     sync.WaitGroup
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	core := &Core{
 		lock: sync.RWMutex{}, done: make(chan struct{}),
-		msgLocker: locker.NewRedisLock(context.Background(), 20),
-		wg:        sync.WaitGroup{},
+		wg: sync.WaitGroup{},
 	}
 	for _, opt := range opts {
 		opt(core)
@@ -62,16 +52,13 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 	}
 	core.wg.Add(1)
 	defer core.wg.Done()
-
-	log.Infof("[Core MessageApplied] message:%v, from:%v,to:%v", mcid, msg.From.String(), msg.From.String())
-	//// todo add lock time
-	ok, err := core.msgLocker.Acquire(ctx, mcid.String())
+	ok, err := locker.NewRedisLock(ctx, mcid.String(), 20).Acquire(ctx)
 	if err != nil {
-		log.Errorf("[MessageApplied] lock message %s failed: %v", mcid.String(), err)
+		log.Errorf("[MessageApplied] Acquire %s failed: %v", mcid.String(), err)
 		return err
 	}
 	if !ok {
-		log.Infof("[MessageApplied] message %s is locked", mcid.String())
+		log.Infof("[MessageApplied] locked message %s", mcid.String())
 		return nil
 	}
 	trading := model.Message{
@@ -87,11 +74,6 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		log.Errorf("[Core MessageApplied] core.MessageApplied: context done: %s", ctx.Err())
 		return nil
 	default:
-		defer func() {
-			if err := recover(); err != nil {
-				log.Errorf("[recover] core.MessageApplied: %v", err)
-			}
-		}()
 		core.ch.In <- &trading
 	}
 	return nil

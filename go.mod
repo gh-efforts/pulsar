@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/appleboy/gin-jwt/v2 v2.8.0
-	github.com/bitrainforest/filmeta-hic v0.0.0-20220518063543-b7f08538c480
+	github.com/bitrainforest/filmeta-hic v0.0.0-20220519021027-da93232d1d30
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/go-paramfetch v0.0.4
 	github.com/filecoin-project/lotus v1.15.1

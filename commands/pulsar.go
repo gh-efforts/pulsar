@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"context"
+
+	"github.com/bitrainforest/filmeta-hic/core/config"
 	"github.com/bitrainforest/filmeta-hic/core/httpservice"
 	"github.com/bitrainforest/filmeta-hic/core/log"
 	"github.com/bitrainforest/filmeta-hic/core/store"
@@ -9,8 +12,6 @@ import (
 	"github.com/bitrainforest/pulsar/internal/dao"
 	"github.com/bitrainforest/pulsar/internal/model"
 	"github.com/bitrainforest/pulsar/internal/service/subscriber"
-
-	"github.com/bitrainforest/filmeta-hic/core/config"
 
 	"github.com/bitrainforest/filmeta-hic/core/envx"
 
@@ -50,7 +51,7 @@ var (
 			clientAPIFlagSet),
 		Action: func(context *cli.Context) error {
 			// load conf
-			MustLoadConf()
+			mustLoadConf()
 
 			var (
 				opts     []kratos.Option
@@ -67,23 +68,8 @@ var (
 			}, nil, httpOpts...)
 
 			//  daemon service
-
-			var (
-				appIds []string
-			)
-			subAll := dao.NewUserAppSubAllDao()
-			list, err := subAll.ListByAllType(context.Context, model.DefaultAllType)
+			core, err := mustInitSubCore(context.Context)
 			assert.CheckErr(err)
-			for _, v := range list {
-				appIds = append(appIds, v.AppId)
-			}
-			natsConf := MustLoadNats(conf)
-			notify, err := subscriber.NewNotify(natsConf.GetUri())
-			assert.CheckErr(err)
-			sub, err := subscriber.NewSub(appIds, notify)
-			assert.CheckErr(err)
-
-			core := subscriber.NewCore(sub)
 			daemon := NewDaemon(context, core)
 			opts = append(opts, kratos.Server(httpServer, daemon))
 			//go TestMessage(core)
@@ -100,7 +86,7 @@ var (
 	}
 )
 
-func MustLoadConf() {
+func mustLoadConf() {
 	// log
 	log.SetUp(ServiceName, log.LevelInfo)
 	var (
@@ -132,20 +118,46 @@ func MustLoadConf() {
 	store.MustLoadRedis(conf)
 }
 
+func mustInitSubAllAddressAppId(ctx context.Context) (appIds []string) {
+	subAll := dao.NewUserAppSubAllDao()
+	list, err := subAll.ListByAllType(ctx, model.DefaultAllType)
+	assert.CheckErr(err)
+	for _, v := range list {
+		appIds = append(appIds, v.AppId)
+	}
+	return appIds
+}
+func mustInitSubCore(ctx context.Context) (*subscriber.Core, error) {
+	initAppIds := mustInitSubAllAddressAppId(ctx)
+	//init nats client
+	natsConf := MustLoadNats(conf)
+	notify, err := subscriber.NewNotify(natsConf.GetUri())
+	if err != nil {
+		return nil, err
+	}
+	// init subscriber
+	sub, err := subscriber.NewSub(initAppIds, notify)
+	if err != nil {
+		return nil, err
+	}
+	// init core
+	core := subscriber.NewCore(sub)
+	return core, nil
+}
+
 //func TestMessage(core *subscriber.Core) {
-//	time.Sleep(5 * time.Second)
-//
+//	time.Sleep(3 * time.Second)
 //	for {
 //		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
-//		for i := 0; i < 300; i++ {
+//		for i := 0; i < 100; i++ {
 //			go func() {
 //				tipSet := &types.TipSet{}
-//				a := cid.Cid{}
-//				//randomCid, err := cid.Decode("bafy2bzacecu7n7wbtogznrtuuvf73dsz7wasgyneqasksdblxupnyovmtwxx")
-//				//if err != nil {
-//				//	log.Infof("[TestMessage]err:%v", err)
-//				//	continue
-//				//}
+//				h, err := multihash.Sum([]byte("TEST"), multihash.SHA3, 4)
+//				if err != nil {
+//					log.Errorf("multihash.Sum err:%v", err)
+//					return
+//				}
+//				a := cid.NewCidV1(7, h)
 //				msg := types.Message{
 //					Version: 1,
 //					To:      builtin.ReserveAddress,

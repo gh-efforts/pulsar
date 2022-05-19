@@ -14,10 +14,10 @@ const (
 )
 
 // NewRedisLock  lockExpire is the  lock expire time in seconds
-func NewRedisLock(ctx context.Context, lockExpire uint32) *redisx.RedisLock {
+func NewRedisLock(ctx context.Context, key string, lockExpire uint32) *redisx.RedisLock {
 	expire := DefaultLockExpire
 	if lockExpire > 0 {
 		expire = lockExpire
 	}
-	return redisx.NewRedisLock(store.GetRedisClient(ctx), redisx.SetLockExpire(expire))
+	return redisx.NewRedisLock(store.GetRedisClient(ctx), key, redisx.SetLockExpire(expire))
 }
