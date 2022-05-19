@@ -27,7 +27,6 @@ func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
 			commands.PulsarCommand,
-			commands.InitCmd,
 		},
 	}
 	if err := app.RunContext(ctx, os.Args); err != nil {

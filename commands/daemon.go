@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	log2 "github.com/bitrainforest/filmeta-hic/core/log"
+
+	"github.com/bitrainforest/pulsar/commands/util"
+
 	"github.com/bitrainforest/pulsar/internal/service/subscriber"
 
 	metricsprometheus "github.com/ipfs/go-metrics-prometheus"
@@ -48,12 +52,13 @@ func NewDaemon(cliCtx *cli.Context, sub *subscriber.Core) *Daemon {
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
+	log.Infof("[Daemon]flag: %+v", daemonFlags)
 	c := d.cliCtx
 	isLite := c.Bool("lite")
 	lotuslog.SetupLogLevels()
 
 	var err error
-	repoPath, err := homedir.Expand(c.String("repo"))
+	repoPath, err := homedir.Expand(daemonFlags.repo)
 	if err != nil {
 		log.Warnw("could not expand repo location", "error", err)
 	} else {
@@ -86,6 +91,13 @@ func (d *Daemon) Start(ctx context.Context) error {
 	if !isLite {
 		if err = paramfetch.GetParams(lcli.ReqContext(c), lotusbuild.ParametersJSON(), lotusbuild.SrsJSON(), 0); err != nil {
 			return xerrors.Errorf("fetching proof parameters: %w", err) //nolint
+		}
+	}
+
+	if daemonFlags.importSnapshot != "" {
+		if err := util.ImportChain(ctx, r, daemonFlags.importSnapshot, true); err != nil {
+			log2.Errorf("importing chain: %s", err)
+			return err
 		}
 	}
 

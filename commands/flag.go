@@ -10,24 +10,32 @@ var clientAPIFlags struct {
 var daemonFlags daemonOpts
 
 type daemonOpts struct {
+	repo                string
 	bootstrap           bool // TODO: is this necessary - do we want to run bony in this mode?
 	config              string
 	genesis             string
 	archive             bool
 	archiveModelStorage string
 	archiveFileStorage  string
-}
-
-var repoFlag = &cli.StringFlag{
-	Name:    "repo",
-	Usage:   "Specify path where bony should store chain state.",
-	EnvVars: []string{"PULSAR_REPO"},
-	Value:   "~/.pulsar",
+	importSnapshot      string
 }
 
 // clientAPIFlagSet are used by commands that act as clients of a daemon's API
 var clientAPIFlagSet = []cli.Flag{
-	repoFlag,
+	//repoFlag,
+	&cli.StringFlag{
+		Name:        "repo",
+		Usage:       "Specify path where bony should store chain state.",
+		EnvVars:     []string{"PULSAR_REPO"},
+		Value:       "~/.pulsar",
+		Destination: &daemonFlags.repo,
+	},
+	&cli.StringFlag{
+		Name:        "import-snapshot",
+		Usage:       "Import chain state from a given chain export file or url.",
+		EnvVars:     []string{"PULSAR_SNAPSHOT"},
+		Destination: &daemonFlags.importSnapshot,
+	},
 	&cli.BoolFlag{
 		Name: "bootstrap",
 		// TODO: usage description
