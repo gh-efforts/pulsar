@@ -21,18 +21,18 @@ const (
 type CoreOpt func(*Core)
 
 type Core struct {
-	closed bool
-	done   chan struct{}
-	lock   sync.RWMutex
-	sub    *Subscriber
-	ch     *chanx.UnboundedChan
-	wg     sync.WaitGroup
+	closed  bool
+	msgDone chan struct{}
+	lock    sync.RWMutex
+	sub     *Subscriber
+	ch      *chanx.UnboundedChan
+	wgStop  sync.WaitGroup
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	core := &Core{
-		lock: sync.RWMutex{}, done: make(chan struct{}),
-		wg: sync.WaitGroup{},
+		lock: sync.RWMutex{}, msgDone: make(chan struct{}),
+		wgStop: sync.WaitGroup{},
 	}
 	for _, opt := range opts {
 		opt(core)
@@ -50,8 +50,9 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		//log.Infof("[MessageApplied] core is closed, ignore message")
 		return nil
 	}
-	core.wg.Add(1)
-	defer core.wg.Done()
+	log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
+	core.wgStop.Add(1)
+	defer core.wgStop.Done()
 	ok, err := locker.NewRedisLock(ctx, mcid.String(), 20).Acquire(ctx)
 	if err != nil {
 		log.Errorf("[MessageApplied] Acquire %s failed: %v", mcid.String(), err)
@@ -68,10 +69,9 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		Ret:      ret,
 		Implicit: implicit,
 	}
-	// todo to Confirm whether the call is asynchronous or synchronous
 	select {
 	case <-ctx.Done():
-		log.Errorf("[Core MessageApplied] core.MessageApplied: context done: %s", ctx.Err())
+		log.Errorf("[Core MessageApplied] core.MessageApplied: context msgDone: %s", ctx.Err())
 		return nil
 	default:
 		core.ch.In <- &trading
@@ -89,7 +89,7 @@ func (core *Core) processing() {
 			log.Errorf("[Core processing] notify failed: %v", err)
 		}
 	}
-	core.done <- struct{}{}
+	core.msgDone <- struct{}{}
 }
 
 func (core *Core) IsClosed() bool {
@@ -108,14 +108,14 @@ func (core *Core) Stop() {
 		return
 	}
 	// wait for processing goroutine
-	core.wg.Wait()
+	core.wgStop.Wait()
 	core.closed = true
 	// core.IsClosed==true, so no message will get to MessageApplied,
 	//and no message send to UnboundedChan,we can close the UnboundedChan in this way.
 	close(core.ch.In)
 	core.lock.Unlock()
 
-	// wait done
-	<-core.done
+	// wait msgDone
+	<-core.msgDone
 	core.sub.Close()
 }

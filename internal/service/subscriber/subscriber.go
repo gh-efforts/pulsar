@@ -106,7 +106,7 @@ func (sub *Subscriber) getSubsByAddress(ctx context.Context, from, to string) (a
 
 func (sub *Subscriber) Close() {
 	sub.wg.Wait()
-	// wait for all work done
+	// wait for all work msgDone
 	sub.workPool.Release()
 	sub.notify.Close()
 }

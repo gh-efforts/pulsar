@@ -22,32 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var _ MsgLocker = (*MockMsgLock)(nil)
-
 func init() {
 	MustLoadTestEnv()
-}
-
-type MockMsgLock struct {
-	m sync.Map
-}
-
-func NewMockMagLock() *MockMsgLock {
-	return &MockMsgLock{m: sync.Map{}}
-}
-
-func (m *MockMsgLock) Acquire(ctx context.Context, key string) (bool, error) {
-	_, ok := m.m.Load(key)
-	if ok {
-		return false, nil
-	}
-	m.m.Store(key, struct{}{})
-	return true, nil
-}
-
-func (m *MockMsgLock) Release(ctx context.Context, key string) bool {
-	m.m.Delete(key)
-	return true
 }
 
 func TestNewCore(t *testing.T) {

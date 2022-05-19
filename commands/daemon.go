@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	log2 "github.com/bitrainforest/filmeta-hic/core/log"
+	hicLog "github.com/bitrainforest/filmeta-hic/core/log"
 
 	"github.com/bitrainforest/pulsar/commands/util"
 
@@ -95,8 +95,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	}
 
 	if daemonFlags.importSnapshot != "" {
-		if err := util.ImportChain(ctx, r, daemonFlags.importSnapshot, true); err != nil {
-			log2.Errorf("importing chain: %s", err)
+		hicLog.Infof("importing snapshot: %s", daemonFlags.importSnapshot)
+		if err = util.ImportChain(ctx, r, daemonFlags.importSnapshot, true); err != nil {
+			hicLog.Errorf("importing chain: %v", err)
 			return err
 		}
 	}
