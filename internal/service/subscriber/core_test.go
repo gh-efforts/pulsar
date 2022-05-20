@@ -36,9 +36,9 @@ func TestNewCore(t *testing.T) {
 	assert.Nil(t, err)
 
 	type want struct {
-		closed bool
-		sub    *Subscriber
-		chCap  int
+		closed    bool
+		sub       *Subscriber
+		msgBuffer int64
 	}
 
 	tests := []struct {
@@ -47,13 +47,13 @@ func TestNewCore(t *testing.T) {
 		want want
 	}{
 		{name: "TestNewCore1", args: args{sub: sub, opts: []CoreOpt{}}, want: want{
-			closed: false,
-			sub:    sub,
-			chCap:  DefaultWorkPoolNum}},
-		{name: "TestNewCore2", args: args{sub: sub}, want: want{
-			closed: false,
-			sub:    sub,
-			chCap:  DefaultWorkPoolNum}},
+			closed:    false,
+			sub:       sub,
+			msgBuffer: DefaultMsgBuffer}},
+		{name: "TestNewCore2", args: args{sub: sub, opts: []CoreOpt{WithMsgBuffer(100)}}, want: want{
+			closed:    false,
+			sub:       sub,
+			msgBuffer: 100}},
 	}
 
 	for _, tt := range tests {
@@ -61,7 +61,7 @@ func TestNewCore(t *testing.T) {
 			got := NewCore(tt.args.sub, tt.args.opts...)
 			assert.Equal(t, tt.want.closed, got.closed)
 			assert.Equal(t, tt.want.sub, got.sub)
-			assert.Equal(t, tt.want.chCap, got.sub.workPool.Cap())
+			assert.Equal(t, tt.want.msgBuffer, got.msgBuffer)
 		})
 	}
 }

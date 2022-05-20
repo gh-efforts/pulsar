@@ -20,24 +20,35 @@ const (
 
 type CoreOpt func(*Core)
 
+func WithMsgBuffer(buffer int64) CoreOpt {
+	return func(c *Core) {
+		if buffer > 0 {
+			c.msgBuffer = buffer
+		}
+	}
+}
+
 type Core struct {
-	closed  bool
-	msgDone chan struct{}
-	lock    sync.RWMutex
-	sub     *Subscriber
-	ch      *chanx.UnboundedChan
-	wgStop  sync.WaitGroup
+	closed    bool
+	msgDone   chan struct{}
+	lock      sync.RWMutex
+	sub       *Subscriber
+	ch        *chanx.UnboundedChan
+	wgStop    sync.WaitGroup
+	msgBuffer int64
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	core := &Core{
 		lock: sync.RWMutex{}, msgDone: make(chan struct{}),
-		wgStop: sync.WaitGroup{},
+		wgStop:    sync.WaitGroup{},
+		msgBuffer: DefaultMsgBuffer,
 	}
+
 	for _, opt := range opts {
 		opt(core)
 	}
-	core.ch = chanx.NewUnboundedChan(DefaultMsgBuffer)
+	core.ch = chanx.NewUnboundedChan(int(core.msgBuffer))
 	core.sub = sub
 	threading.GoSafe(func() {
 		core.processing()
