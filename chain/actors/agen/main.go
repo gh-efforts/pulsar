@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/bitrainforest/pulsar/chain/agen/generator"
+	"github.com/bitrainforest/pulsar/chain/actors/agen/generator"
 )
 
 func main() {
