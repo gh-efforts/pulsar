@@ -153,7 +153,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 		node.Override(new(*stmgr.StateManager), modules.StateManager),
 		// replace with our own exec monitor
 		//node.Override(new(stmgr.ExecMonitor), modules.NewBufferedExecMonitor),
-		node.Override(new(stmgr.ExecMonitor), d.core.GetExecMonitor),
+		node.Override(new(stmgr.ExecMonitor), d.core.OverrideExecMonitor),
 
 		// End custom StateManager injection.
 		genesis,

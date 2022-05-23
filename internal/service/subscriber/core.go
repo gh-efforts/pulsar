@@ -61,7 +61,7 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	return core
 }
 
-func (core *Core) GetExecMonitor(cs *store.ChainStore) *Core {
+func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 	core.cs = cs
 	return core
 }
@@ -104,24 +104,31 @@ func (core *Core) processing() {
 	for item := range core.ch.Out {
 		msg := item.(*model.Message)
 		ctx := context.Background()
-		// todo get address
-		getActorID, err := util.MakeGetActorIDFunc(ctx, core.cs.ActorStore(ctx), msg.TipSet)
-		if err != nil {
-			log.Errorf("[processing] get actor id failed: %v", err)
-			continue
-		}
-		to, ok := getActorID(msg.Msg.To)
-		if !ok {
-			log.Errorf("[processing] to address:%v called  getActorID false", msg.Msg.To)
-			continue
-		}
-		from, ok := getActorID(msg.Msg.From)
-		if !ok {
-			log.Errorf("[processing] from address:%v called  getActorID false", msg.Msg.From)
-			continue
+
+		from := msg.Msg.From
+		to := msg.Msg.To
+
+		if core.cs != nil {
+			getActorIDFn, err := util.MakeGetActorIDFunc(ctx, core.cs.ActorStore(ctx), msg.TipSet)
+			if err != nil {
+				log.Errorf("[processing] get actor id failed: %v", err)
+				continue
+			}
+			var (
+				ok bool
+			)
+			to, ok = getActorIDFn(to)
+			if !ok {
+				log.Errorf("[processing] to address:%v called  getActorID false", msg.Msg.To)
+				continue
+			}
+			from, ok = getActorIDFn(from)
+			if !ok {
+				log.Errorf("[processing] from address:%v called  getActorID false", msg.Msg.From)
+				continue
+			}
 		}
 		log.Infof("[processing] to:%v,from:%v", to, from)
-
 		if err := core.sub.Notify(ctx, from.String(), to.String(), msg); err != nil {
 			log.Errorf("[Core processing] notify failed: %v", err)
 		}

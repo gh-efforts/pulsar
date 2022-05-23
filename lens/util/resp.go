@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/state"
@@ -13,14 +14,15 @@ import (
 	builtininit "github.com/bitrainforest/pulsar/chain/actors/builtin/init"
 )
 
+var (
+	actorAddressMap sync.Map
+)
+
 func MakeGetActorIDFunc(_ context.Context, store adt.Store, next *types.TipSet) (func(a address.Address) (address.Address, bool), error) {
 	nextStateTree, err := state.LoadStateTree(store, next.ParentState())
 	if err != nil {
 		return nil, fmt.Errorf("load state tree: %w", err)
 	}
-
-	actorIDs := map[address.Address]address.Address{}
-
 	nextInitActor, err := nextStateTree.GetActor(builtininit.Address)
 	if err != nil {
 		return nil, fmt.Errorf("getting init actor: %w", err)
@@ -33,18 +35,18 @@ func MakeGetActorIDFunc(_ context.Context, store adt.Store, next *types.TipSet) 
 
 	return func(a address.Address) (address.Address, bool) {
 		// Shortcut lookup before resolving
-		c, ok := actorIDs[a]
+		c, ok := actorAddressMap.Load(a)
 		if ok {
-			return c, true
+			log.Infof("[MakeGetActorIDFunc] actorAddressMap.Load(%s) = %s", a, c)
+			return c.(address.Address), true
 		}
 
 		ra, found, err := nextInitActorState.ResolveAddress(a)
 		if err != nil || !found {
-			log.Warnw("failed to resolve actor address", "address", a.String())
+			log.Warnf("failed to resolve actor address:%v,err:%v", a.String(), err)
 			return a, false
 		}
-		actorIDs[a] = ra
-
+		actorAddressMap.Store(a, ra)
 		return ra, true
 	}, nil
 }

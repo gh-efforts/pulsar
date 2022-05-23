@@ -175,3 +175,25 @@ func NewTestCore() (*Core, error) {
 	core := NewCore(sub)
 	return core, nil
 }
+
+func BenchmarkCore_MessageApplied(b *testing.B) {
+	core, err := NewTestCore()
+	assert.Nil(b, err)
+	defer func() {
+		err := recover()
+		assert.Nil(b, err)
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	msg := types.Message{
+		Version: 1,
+		To:      builtin.ReserveAddress,
+		From:    builtin.RootVerifierAddress,
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := core.MessageApplied(ctx, nil, cid.Undef, &msg, nil, false)
+		assert.Nil(b, err)
+	}
+}
