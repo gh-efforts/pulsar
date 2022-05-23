@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/bitrainforest/pulsar/lens/util"
-
 	"github.com/filecoin-project/lotus/chain/store"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -33,7 +31,6 @@ func WithMsgBuffer(buffer int64) CoreOpt {
 }
 
 type Core struct {
-	cs        *store.ChainStore
 	closed    bool
 	msgDone   chan struct{}
 	lock      sync.RWMutex
@@ -41,6 +38,8 @@ type Core struct {
 	ch        *chanx.UnboundedChan
 	wgStop    sync.WaitGroup
 	msgBuffer int64
+
+	actor *ActorAddress
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
@@ -62,7 +61,8 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 }
 
 func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
-	core.cs = cs
+	actor := NewActorAddress(cs)
+	core.actor = actor
 	return core
 }
 
@@ -108,23 +108,19 @@ func (core *Core) processing() {
 		from := msg.Msg.From
 		to := msg.Msg.To
 
-		if core.cs != nil {
-			getActorIDFn, err := util.MakeGetActorIDFunc(ctx, core.cs.ActorStore(ctx), msg.TipSet)
-			if err != nil {
-				log.Errorf("[processing] get actor id failed: %v", err)
-				continue
-			}
+		if core.actor != nil {
 			var (
-				ok bool
+				err error
 			)
-			to, ok = getActorIDFn(to)
-			if !ok {
-				log.Errorf("[processing] to address:%v called  getActorID false", msg.Msg.To)
+			from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
+			if err != nil {
+				log.Errorf("[processing] from address:%v called  getActorID,err:%v", msg.Msg.From, err)
 				continue
 			}
-			from, ok = getActorIDFn(from)
-			if !ok {
-				log.Errorf("[processing] from address:%v called  getActorID false", msg.Msg.From)
+
+			to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
+			if err != nil {
+				log.Errorf("[processing] to address:%v called  getActorID,err:%v", msg.Msg.To, err)
 				continue
 			}
 		}
