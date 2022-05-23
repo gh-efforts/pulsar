@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/filecoin-project/lotus/chain/store"
+
 	"github.com/bitrainforest/filmeta-hic/core/log"
 	"github.com/bitrainforest/filmeta-hic/core/threading"
 	"github.com/bitrainforest/filmeta-hic/model"
@@ -29,6 +31,7 @@ func WithMsgBuffer(buffer int64) CoreOpt {
 }
 
 type Core struct {
+	cs        *store.ChainStore
 	closed    bool
 	msgDone   chan struct{}
 	lock      sync.RWMutex
@@ -53,6 +56,11 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	threading.GoSafe(func() {
 		core.processing()
 	})
+	return core
+}
+
+func (core *Core) GetExecMonitor(cs *store.ChainStore) *Core {
+	core.cs = cs
 	return core
 }
 
