@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/bitrainforest/pulsar/lens/util"
+
 	"github.com/filecoin-project/lotus/chain/store"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -102,9 +104,25 @@ func (core *Core) processing() {
 	for item := range core.ch.Out {
 		msg := item.(*model.Message)
 		ctx := context.Background()
-		to := msg.Msg.To.String()
-		from := msg.Msg.From.String()
-		if err := core.sub.Notify(ctx, to, from, msg); err != nil {
+		// todo get address
+		getActorID, err := util.MakeGetActorIDFunc(ctx, core.cs.ActorStore(ctx), msg.TipSet)
+		if err != nil {
+			log.Errorf("[processing] get actor id failed: %v", err)
+			continue
+		}
+		to, ok := getActorID(msg.Msg.To)
+		if !ok {
+			log.Errorf("[processing] to address:%v called  getActorID false", msg.Msg.To)
+			continue
+		}
+		from, ok := getActorID(msg.Msg.From)
+		if !ok {
+			log.Errorf("[processing] from address:%v called  getActorID false", msg.Msg.From)
+			continue
+		}
+		log.Infof("[processing] to:%v,from:%v", to, from)
+
+		if err := core.sub.Notify(ctx, to.String(), from.String(), msg); err != nil {
 			log.Errorf("[Core processing] notify failed: %v", err)
 		}
 	}

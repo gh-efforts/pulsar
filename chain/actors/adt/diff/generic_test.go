@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"bony/chain/actors/adt"
+	"github.com/bitrainforest/pulsar/chain/actors/adt"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
-	"bony/chain/actors/adt"
+	"ors/adt"
 
 	builtin{{.v}} "github.com/filecoin-project/specs-actors{{.import}}actors/builtin"
 

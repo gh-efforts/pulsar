@@ -13,8 +13,8 @@ import (
 	builtin0 "github.com/filecoin-project/specs-actors/actors/builtin"
 	builtin2 "github.com/filecoin-project/specs-actors/v2/actors/builtin"
 
-	"bony/chain/actors/adt"
-	"bony/chain/actors/adt/diff"
+	"github.com/bitrainforest/pulsar/chain/actors/adt"
+	"github.com/bitrainforest/pulsar/chain/actors/adt/diff"
 )
 
 var log = logging.Logger("bony/actors")

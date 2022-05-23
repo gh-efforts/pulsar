@@ -12,7 +12,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/node/modules/dtypes"
 
-	"bony/chain/actors/adt"
+	"github.com/bitrainforest/pulsar/chain/actors/adt"
 	"bony/chain/actors/builtin"
 {{range .versions}}
 	builtin{{.}} "github.com/filecoin-project/specs-actors{{import .}}actors/builtin"

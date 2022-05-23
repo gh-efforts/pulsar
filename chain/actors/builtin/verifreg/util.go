@@ -2,7 +2,8 @@ package verifreg
 
 import (
 	"bony/chain/actors"
-	"bony/chain/actors/adt"
+
+	"github.com/bitrainforest/pulsar/chain/actors/adt"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-state-types/abi"
