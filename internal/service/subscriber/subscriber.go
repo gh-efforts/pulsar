@@ -43,7 +43,7 @@ func NewSub(initAppIds []string, notify Notify, optFns ...OptFn) (*Subscriber, e
 		opts.workPoolNum = MaxWorkPoolNum
 	}
 
-	Sub = &Subscriber{
+	s := &Subscriber{
 		subAllAppIds: sync.Map{},
 		opts:         &opts,
 		wg:           sync.WaitGroup{},
@@ -51,15 +51,15 @@ func NewSub(initAppIds []string, notify Notify, optFns ...OptFn) (*Subscriber, e
 	var (
 		err error
 	)
-	if Sub.workPool, err = ants.NewPool(int(Sub.opts.workPoolNum)); err != nil {
+	if s.workPool, err = ants.NewPool(int(s.opts.workPoolNum)); err != nil {
 		return nil, err
 	}
 
 	for _, appId := range initAppIds {
-		Sub.AppendAppId(appId)
+		s.AppendAppId(appId)
 	}
-	Sub.notify = notify
-	return Sub, err
+	s.notify = notify
+	return s, err
 }
 
 func (sub *Subscriber) AppendAppId(appId string) {

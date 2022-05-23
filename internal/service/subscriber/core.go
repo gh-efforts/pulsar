@@ -122,7 +122,7 @@ func (core *Core) processing() {
 		}
 		log.Infof("[processing] to:%v,from:%v", to, from)
 
-		if err := core.sub.Notify(ctx, to.String(), from.String(), msg); err != nil {
+		if err := core.sub.Notify(ctx, from.String(), to.String(), msg); err != nil {
 			log.Errorf("[Core processing] notify failed: %v", err)
 		}
 	}
