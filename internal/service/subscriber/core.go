@@ -114,14 +114,14 @@ func (core *Core) processing() {
 			)
 			from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
 			if err != nil {
+				// just to log getActorAddress error
 				log.Errorf("[processing] from address:%v called  getActorID,err:%v", msg.Msg.From, err)
-				continue
 			}
 
 			to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
 			if err != nil {
+				// just to log getActorAddress error
 				log.Errorf("[processing] to address:%v called  getActorID,err:%v", msg.Msg.To, err)
-				continue
 			}
 		}
 		log.Infof("[processing] from:%v,to:%v", from.String(), to.String())
