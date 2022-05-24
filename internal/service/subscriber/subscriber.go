@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	// Sub when the service is started, it will be initialized.
 	Sub *Subscriber
 )
 

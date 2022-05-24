@@ -64,6 +64,20 @@ func (userApp UserAppHandler) getAppId(c *gin.Context) (string, error) {
 	return applyCx.AppId, nil
 }
 
+func (userApp UserAppHandler) GetActorAddress(ctx context.Context, a string) (address.Address, response.Response) {
+	addr, err := address.NewFromString(a)
+	if err != nil {
+		return address.Address{}, codex.ErrService.FormatErrMsg(err)
+	}
+
+	actor := subscriber.NewProxyActorAddress()
+	actorAddress, err := actor.GetActorAddress(ctx, nil, addr)
+	if err != nil {
+		return address.Address{}, codex.ErrService.FormatErrMsg(err)
+	}
+	return actorAddress, nil
+}
+
 func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 	var (
 		param req.AddSubReq
@@ -98,17 +112,11 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 
 	// other, subscribe some address
 
-	addr, err := address.NewFromString(param.Address)
+	resAddress, respErr := userApp.GetActorAddress(c, param.Address)
 	if err != nil {
-		return codex.ErrService.FormatErrMsg(err)
+		return respErr
 	}
-
-	actor := subscriber.NewProxyActorAddress()
-	actorAddress, err := actor.GetActorAddress(c, nil, addr)
-	if err != nil {
-		return codex.ErrService.FormatErrMsg(err)
-	}
-	param.Address = actorAddress.String()
+	param.Address = resAddress.String()
 
 	if respErr := userApp.GetAppWatch(c, appId,
 		param.Address, func(userWatch model.UserAppSub) response.Response {
@@ -142,11 +150,17 @@ func (userApp UserAppHandler) CancelSub(c *gin.Context) response.Response {
 	}
 	// the appid want to cancel all address
 	if param.IsAll() {
-		if err := userApp.UserAppService.CancelAll(c, appId); err != nil {
+		if err = userApp.UserAppService.CancelAll(c, appId); err != nil {
 			return codex.ErrService.FormatErrMsg(err)
 		}
 		return codex.OK
 	}
+
+	resAddress, respErr := userApp.GetActorAddress(c, param.Address)
+	if err != nil {
+		return respErr
+	}
+	param.Address = resAddress.String()
 
 	if err := userApp.UserAppService.CancelSubAddress(c, appId, param.Address); err != nil {
 		return codex.ErrService.FormatErrMsg(err)
