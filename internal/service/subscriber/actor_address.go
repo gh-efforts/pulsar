@@ -14,6 +14,13 @@ import (
 	"github.com/filecoin-project/lotus/chain/types"
 )
 
+type Address interface {
+	GetActorAddress(ctx context.Context, next *types.TipSet,
+		a address.Address) (address.Address, error)
+}
+
+var _ Address = (*ActorAddress)(nil)
+
 type ActorAddress struct {
 	cs *store.ChainStore
 	m  sync.Map

@@ -3,6 +3,9 @@ package handler
 import (
 	"context"
 
+	"github.com/bitrainforest/pulsar/internal/service/subscriber"
+	"github.com/filecoin-project/go-address"
+
 	"github.com/bitrainforest/pulsar/api/middleware"
 	"github.com/pkg/errors"
 
@@ -69,13 +72,16 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 	if err != nil {
 		return codex.ErrService.FormatErrMsg(err)
 	}
-	if err := c.ShouldBind(&param); err != nil {
+	if err = c.ShouldBind(&param); err != nil {
 		return codex.ErrParamIllegal.FormatErrMsg(err)
 	}
 
 	// the appid want to subscribe all address
 	if param.IsAll() {
-		subAll, err := userApp.UserAppService.GetWatchAllByAppId(c, appId)
+		var (
+			subAll model.UserAppSubAll
+		)
+		subAll, err = userApp.UserAppService.GetWatchAllByAppId(c, appId)
 		if err != nil {
 			return codex.ErrService.FormatErrMsg(err)
 		}
@@ -84,13 +90,25 @@ func (userApp UserAppHandler) AddSub(c *gin.Context) response.Response {
 		}
 		subAll = model.NewDefaultAppSubAll()
 		subAll.AppId = appId
-		if err := userApp.UserAppService.CreateSubAll(c, subAll); err != nil {
+		if err = userApp.UserAppService.CreateSubAll(c, subAll); err != nil {
 			return codex.ErrService.FormatErrMsg(err)
 		}
 		return codex.OK
 	}
 
 	// other, subscribe some address
+
+	addr, err := address.NewFromString(param.Address)
+	if err != nil {
+		return codex.ErrService.FormatErrMsg(err)
+	}
+
+	actor := subscriber.NewProxyActorAddress()
+	actorAddress, err := actor.GetActorAddress(c, nil, addr)
+	if err != nil {
+		return codex.ErrService.FormatErrMsg(err)
+	}
+	param.Address = actorAddress.String()
 
 	if respErr := userApp.GetAppWatch(c, appId,
 		param.Address, func(userWatch model.UserAppSub) response.Response {
