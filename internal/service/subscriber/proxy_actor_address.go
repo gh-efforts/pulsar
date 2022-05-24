@@ -72,11 +72,9 @@ func (p *ProxyActorAddress) GetActorAddress(ctx context.Context, next *types.Tip
 	)
 	req.Method = "Filecoin.StateLookupID"
 	req.Jsonrpc = "2.0"
-
-	req.Params = []interface{}{
-		a.String(),
-		"[]",
-	}
+	req.Id = 0
+	req.Params = append(req.Params, a.String())
+	req.Params = append(req.Params, []interface{}{})
 	_, err := p.client.R().SetHeader("Content-Type", "application/json").
 		SetBody(req).SetResult(&resp).Post(p.uri)
 	if err != nil {
