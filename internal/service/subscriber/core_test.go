@@ -2,11 +2,14 @@ package subscriber
 
 import (
 	"context"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"sync"
 	"testing"
 	"unsafe"
+
+	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
 
 	"github.com/bitrainforest/filmeta-hic/model"
 
@@ -172,13 +175,41 @@ func MustLoadTestEnv() {
 	store.MustLoadRedis(conf)
 }
 
-func NewTestCore() (*Core, error) {
+func NewTestCore(opts ...CoreOpt) (*Core, error) {
 	sub, err := NewSub([]string{"test"}, &MockNotify{})
 	if err != nil {
 		return nil, err
 	}
-	core := NewCore(sub)
+	core := NewCore(sub, opts...)
 	return core, nil
+}
+
+func TestProcessing(t *testing.T) {
+	mockNotify := &MockNotify{}
+	initAppIds := []string{"test", "test2"}
+	sub, err := NewSub(initAppIds, mockNotify)
+	assert.Nil(t, err)
+	core := NewCore(sub, WithAddress(actoraddress.NewProxyActorAddress()))
+	var (
+		wg sync.WaitGroup
+	)
+	count := rand.Intn(100) + 50
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		msg := &model.Message{
+			MCid: RandCId(strconv.Itoa(i) + "Processing2"),
+			Msg:  &types.Message{To: builtin.ReserveAddress, From: builtin.CronActorAddr},
+		}
+		go func() {
+			defer wg.Done()
+			err := core.processing(msg)
+			assert.Nil(t, err)
+		}()
+	}
+	wg.Wait()
+	core.Stop()
+	assert.Equal(t, mockNotify.count, int64(count*len(initAppIds)))
+
 }
 
 func BenchmarkMessageApplied(b *testing.B) {
@@ -213,7 +244,7 @@ func RandCId(v string) cid.Cid {
 }
 
 func BenchmarkProcessing(b *testing.B) {
-	core, err := NewTestCore()
+	core, err := NewTestCore(WithAddress(actoraddress.NewProxyActorAddress()))
 	assert.Nil(b, err)
 	defer func() {
 		err := recover()

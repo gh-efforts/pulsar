@@ -21,7 +21,7 @@ import (
 
 const (
 	DefaultMsgBuffer = 500
-	CoreWorkerNum    = 10
+	CoreWorkerNum    = 100
 )
 
 type CoreOpt func(*Core)
@@ -34,27 +34,37 @@ func WithMsgBuffer(buffer int64) CoreOpt {
 	}
 }
 
+func WithAddress(a Address) CoreOpt {
+	return func(c *Core) {
+		if a != nil {
+			c.address = a
+		}
+	}
+}
+
 type Core struct {
-	closed    bool
-	msgDone   chan struct{}
-	lock      sync.RWMutex
-	sub       *Subscriber
-	ch        *chanx.UnboundedChan
-	wgStop    sync.WaitGroup
-	msgBuffer int64
+	closed      bool
+	msgDone     chan struct{}
+	lock        sync.RWMutex
+	sub         *Subscriber
+	ch          *chanx.UnboundedChan
+	lockWait    sync.WaitGroup
+	processWait sync.WaitGroup
+	msgBuffer   int64
 	// why we should use pool?
 	//Although we have an unbounded channel which ensures that the messages are sent without block,
 	//we are slow to process message if we receive message and process them synchronously.
 	//this can cause a backlog of messages
 	processPool *ants.Pool
-	actor       Address
+	address     Address
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	core := &Core{
 		lock: sync.RWMutex{}, msgDone: make(chan struct{}),
-		wgStop:    sync.WaitGroup{},
-		msgBuffer: DefaultMsgBuffer,
+		lockWait:    sync.WaitGroup{},
+		processWait: sync.WaitGroup{},
+		msgBuffer:   DefaultMsgBuffer,
 	}
 	core.processPool, _ = ants.NewPool(CoreWorkerNum) //nolint:errcheck
 	for _, opt := range opts {
@@ -70,7 +80,7 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 
 func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 	actor := actoraddress.NewActorAddress(cs)
-	core.actor = actor
+	core.address = actor
 	return core
 }
 
@@ -80,8 +90,8 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		return nil
 	}
 	//log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
-	core.wgStop.Add(1)
-	defer core.wgStop.Done()
+	core.lockWait.Add(1)
+	defer core.lockWait.Done()
 	trading := model.Message{
 		TipSet:   ts,
 		MCid:     mcid,
@@ -114,12 +124,14 @@ func (core *Core) Rec() {
 }
 
 func (core *Core) processing(msg *model.Message) error {
+	core.processWait.Add(1)
 	ctx := context.Background()
 	from := msg.Msg.From
 	to := msg.Msg.To
 
 	return core.processPool.Submit(func() {
-		if core.actor != nil {
+		defer core.processWait.Done()
+		if core.address != nil {
 			var (
 				wg sync.WaitGroup
 			)
@@ -129,7 +141,7 @@ func (core *Core) processing(msg *model.Message) error {
 				var (
 					err error
 				)
-				from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
+				from, err = core.address.GetActorAddress(ctx, msg.TipSet, from)
 				if err != nil {
 					// just to log getActorAddress error
 					log.Errorf("[processing] from address:%v MCid:%v,err:%v", msg.Msg.From, msg.MCid.String(), err.Error())
@@ -141,7 +153,7 @@ func (core *Core) processing(msg *model.Message) error {
 				var (
 					err error
 				)
-				to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
+				to, err = core.address.GetActorAddress(ctx, msg.TipSet, to)
 				if err != nil {
 					// just to log getActorAddress error
 					log.Errorf("[processing] to address:%v, MCid:%v,err:%v", msg.Msg.To, msg.MCid.String(), err.Error())
@@ -170,10 +182,11 @@ func (core *Core) Stop() {
 	}
 	core.lock.Lock()
 	if core.closed {
+		core.lock.Unlock()
 		return
 	}
 	// wait for processing goroutine
-	core.wgStop.Wait()
+	core.lockWait.Wait()
 	core.closed = true
 	// core.IsClosed==true, so no message will get to MessageApplied,
 	//and no message send to UnboundedChan,we can close the UnboundedChan in this way.
@@ -182,5 +195,8 @@ func (core *Core) Stop() {
 
 	// wait msgDone
 	<-core.msgDone
+	// wait for processPool goroutine
+	core.processWait.Wait()
+
 	core.sub.Close()
 }

@@ -21,9 +21,9 @@ type MockNotify struct {
 }
 
 func (m *MockNotify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Message) error {
+	defer wgDone.Done()
 	//time.Sleep(time.Duration(100+rand.Intn(400)) * time.Millisecond)
 	atomic.AddInt64(&m.count, int64(len(appIds)))
-	wgDone.Done()
 	return nil
 }
 

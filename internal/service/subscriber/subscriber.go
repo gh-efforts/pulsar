@@ -46,11 +46,6 @@ func NewSub(initAppIds []string, notify Notify, optFns ...OptFn) (*Subscriber, e
 		opts.workPoolNum = MaxWorkPoolNum
 	}
 
-	// if lockerExpire=0, that means that when the message processing is complete,
-	// the msg key is  deleted
-	if opts.lockerExpire < 0 {
-		opts.lockerExpire = 0
-	}
 	if opts.lockerExpire > MaxLockExpire {
 		opts.lockerExpire = MaxLockExpire
 	}
@@ -96,6 +91,9 @@ func (sub *Subscriber) Notify(ctx context.Context, from, to string, msg *model.M
 		log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
 		return nil
 	}
+
+	// if lockerExpire=0, that means that when the message processing is complete,
+	// the msg key is  deleted
 	if sub.opts.lockerExpire == 0 {
 		defer lockerCli.Release(ctx)
 	}
