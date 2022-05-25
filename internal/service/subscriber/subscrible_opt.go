@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	DefaultWorkPoolNum = 500
-	MaxWorkPoolNum     = 1000
+	DefaultWorkPoolNum = 2000
+	MaxWorkPoolNum     = 3000
 )
 
 type (
@@ -29,6 +29,7 @@ func defaultOpts() Opts {
 	}
 }
 
+// WithUserAppSubDao set useAppSubDao
 func WithUserAppSubDao(appSub dao.UserAppSubDao) OptFn {
 	return func(opts *Opts) {
 		if appSub != nil {
@@ -37,6 +38,7 @@ func WithUserAppSubDao(appSub dao.UserAppSubDao) OptFn {
 	}
 }
 
+// WithAddressMarkCache set address mark cache
 func WithAddressMarkCache(mark cache.AddressMark) OptFn {
 	return func(opts *Opts) {
 		if mark != nil {
@@ -45,6 +47,7 @@ func WithAddressMarkCache(mark cache.AddressMark) OptFn {
 	}
 }
 
+// WithWorkPoolNum set work pool num
 func WithWorkPoolNum(num int64) OptFn {
 	return func(opts *Opts) {
 		opts.workPoolNum = num

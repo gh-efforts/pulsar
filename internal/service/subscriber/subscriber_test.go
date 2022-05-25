@@ -4,8 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"reflect"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"unsafe"
+
+	"github.com/ipfs/go-cid"
 
 	model2 "github.com/bitrainforest/filmeta-hic/model"
 
@@ -104,7 +110,7 @@ func TestNewSub(t *testing.T) {
 				optFns: []OptFn{
 					WithUserAppSubDao(&MockUserAppSubDao{}),
 					WithAddressMarkCache(&MockAddressMark{}),
-					WithWorkPoolNum(2000),
+					WithWorkPoolNum(4000),
 				},
 			},
 			want: want{
@@ -234,6 +240,8 @@ func TestSubscriber_Notify(t *testing.T) {
 		},
 	}
 
+	var cidval int64 = 0
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sub, err := NewSub(tt.args.initAppIds, tt.args.notify,
@@ -242,7 +250,16 @@ func TestSubscriber_Notify(t *testing.T) {
 			)
 			assert.Nil(t, err)
 			for i := 0; i < tt.args.round; i++ {
-				sub.Notify(context.Background(), fmt.Sprintf("test%d", i), "test", &model2.Message{}) //nolint
+				atomic.AddInt64(&cidval, 1)
+				msg := &model2.Message{}
+				newCid := &cid.Undef
+				refVal := reflect.ValueOf(newCid).Elem().FieldByName("str")
+				refVal = reflect.NewAt(refVal.Type(), unsafe.Pointer(refVal.UnsafeAddr())).Elem()
+				nv := reflect.ValueOf(strconv.Itoa(int(cidval)))
+				refVal.Set(nv)
+				msg.MCid = *newCid
+				err = sub.Notify(context.Background(), fmt.Sprintf("test%d", i), "test", msg)
+				assert.Nil(t, err)
 			}
 			sub.Close()
 			assert.Equal(t, tt.args.initAppIds, tt.want.initAppIds)

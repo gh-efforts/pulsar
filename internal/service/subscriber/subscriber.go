@@ -2,7 +2,9 @@ package subscriber
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/bitrainforest/pulsar/internal/utils/locker"
 	"github.com/pkg/errors"
 
 	"github.com/panjf2000/ants/v2"
@@ -73,6 +75,19 @@ func (sub *Subscriber) RemoveAppId(appId string) {
 
 func (sub *Subscriber) Notify(ctx context.Context, from, to string, msg *model.Message) error {
 	sub.wg.Add(1)
+
+	// todo to change default lockExpireTime?
+	ok, err := locker.NewRedisLock(ctx, msg.MCid.String(), 20).Acquire(ctx)
+	if err != nil {
+		sub.wg.Done()
+		return fmt.Errorf("[MessageApplied] Notify Mcid: %s failed: %v", msg.MCid.String(), err)
+	}
+	if !ok {
+		sub.wg.Done()
+		log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
+		return nil
+	}
+
 	return sub.workPool.Submit(func() {
 		appIds := sub.getSubsByAddress(ctx, from, to)
 		if len(appIds) == 0 {

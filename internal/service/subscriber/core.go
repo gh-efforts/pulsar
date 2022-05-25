@@ -9,7 +9,6 @@ import (
 	"github.com/bitrainforest/filmeta-hic/core/log"
 	"github.com/bitrainforest/filmeta-hic/core/threading"
 	"github.com/bitrainforest/filmeta-hic/model"
-	"github.com/bitrainforest/pulsar/internal/utils/locker"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/vm"
 	"github.com/ipfs/go-cid"
@@ -68,21 +67,12 @@ func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
 	if core.IsClosed() {
-		//log.Infof("[MessageApplied] core is closed, ignore message")
+		log.Infof("[MessageApplied] core is closed, ignore message：%v", msg.Cid())
 		return nil
 	}
 	log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
 	core.wgStop.Add(1)
 	defer core.wgStop.Done()
-	ok, err := locker.NewRedisLock(ctx, mcid.String(), 20).Acquire(ctx)
-	if err != nil {
-		log.Errorf("[MessageApplied] Acquire %s failed: %v", mcid.String(), err)
-		return err
-	}
-	if !ok {
-		log.Infof("[MessageApplied] locked message %s", mcid.String())
-		return nil
-	}
 	trading := model.Message{
 		TipSet:   ts,
 		MCid:     mcid,
