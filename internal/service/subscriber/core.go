@@ -114,32 +114,37 @@ func (core *Core) Rec() {
 }
 
 func (core *Core) processing(msg *model.Message) error {
-	return core.processPool.Submit(func() {
-		ctx := context.Background()
-		from := msg.Msg.From
-		to := msg.Msg.To
+	ctx := context.Background()
+	from := msg.Msg.From
+	to := msg.Msg.To
 
+	return core.processPool.Submit(func() {
 		if core.actor != nil {
 			var (
-				wg  sync.WaitGroup
-				err error
+				wg sync.WaitGroup
 			)
 			wg.Add(2)
 			threading.GoSafe(func() {
 				defer wg.Done()
+				var (
+					err error
+				)
 				from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
 				if err != nil {
 					// just to log getActorAddress error
-					log.Errorf("[processing] from address:%v called  getActorID,err:%v", msg.Msg.From, err)
+					log.Errorf("[processing] from address:%v MCid:%v,err:%v", msg.Msg.From, msg.MCid.String(), err.Error())
 				}
 			})
 
 			threading.GoSafe(func() {
 				defer wg.Done()
+				var (
+					err error
+				)
 				to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
 				if err != nil {
 					// just to log getActorAddress error
-					log.Errorf("[processing] to address:%v called  getActorID,err:%v", msg.Msg.To, err)
+					log.Errorf("[processing] to address:%v, MCid:%v,err:%v", msg.Msg.To, msg.MCid.String(), err.Error())
 				}
 			})
 			wg.Wait()

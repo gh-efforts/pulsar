@@ -258,3 +258,24 @@ func TestSubscriber_Notify(t *testing.T) {
 		})
 	}
 }
+func BenchmarkNotify(b *testing.B) {
+	notify, err := NewNotify(nats.DefaultURL)
+	assert.Nil(b, err)
+
+	sub, err := NewSub([]string{"test1", "test2"}, notify)
+	WithUserAppSubDao(MockUserAppSubDao{appIds: []string{"test1", "test2"}})
+	WithAddressMarkCache(MockAddressMark{})
+	assert.Nil(b, err)
+	defer func() {
+		sub.Close()
+		err := recover()
+		assert.Nil(b, err)
+	}()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		msg := &model2.Message{}
+		msg.MCid = RandCId(strconv.Itoa(i) + "Notify")
+		err = sub.Notify(context.Background(), "test", "test", msg)
+		assert.Nil(b, err)
+	}
+}
