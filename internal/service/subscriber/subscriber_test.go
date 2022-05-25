@@ -4,14 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"unsafe"
-
-	"github.com/ipfs/go-cid"
 
 	model2 "github.com/bitrainforest/filmeta-hic/model"
 
@@ -252,12 +248,7 @@ func TestSubscriber_Notify(t *testing.T) {
 			for i := 0; i < tt.args.round; i++ {
 				atomic.AddInt64(&cidval, 1)
 				msg := &model2.Message{}
-				newCid := &cid.Undef
-				refVal := reflect.ValueOf(newCid).Elem().FieldByName("str")
-				refVal = reflect.NewAt(refVal.Type(), unsafe.Pointer(refVal.UnsafeAddr())).Elem()
-				nv := reflect.ValueOf(strconv.Itoa(int(cidval)))
-				refVal.Set(nv)
-				msg.MCid = *newCid
+				msg.MCid = RandCId(strconv.Itoa(int(cidval)) + "Notify")
 				err = sub.Notify(context.Background(), fmt.Sprintf("test%d", i), "test", msg)
 				assert.Nil(t, err)
 			}

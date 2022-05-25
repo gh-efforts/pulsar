@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/panjf2000/ants/v2"
+
 	"github.com/filecoin-project/lotus/chain/store"
 
 	"github.com/bitrainforest/filmeta-hic/core/log"
@@ -17,6 +19,7 @@ import (
 
 const (
 	DefaultMsgBuffer = 500
+	CoreWorkerNum    = 10
 )
 
 type CoreOpt func(*Core)
@@ -37,8 +40,12 @@ type Core struct {
 	ch        *chanx.UnboundedChan
 	wgStop    sync.WaitGroup
 	msgBuffer int64
-
-	actor *ActorAddress
+	// why we should use pool?
+	//Although we have an unbounded channel which ensures that the messages are sent without block,
+	//we are slow to process message if we receive message and process them synchronously.
+	//this can cause a backlog of messages
+	processPool *ants.Pool
+	actor       *ActorAddress
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
@@ -47,14 +54,14 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 		wgStop:    sync.WaitGroup{},
 		msgBuffer: DefaultMsgBuffer,
 	}
-
+	core.processPool, _ = ants.NewPool(CoreWorkerNum) //nolint:errcheck
 	for _, opt := range opts {
 		opt(core)
 	}
 	core.ch = chanx.NewUnboundedChan(int(core.msgBuffer))
 	core.sub = sub
 	threading.GoSafe(func() {
-		core.processing()
+		core.Rec()
 	})
 	return core
 }
@@ -70,7 +77,7 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 		log.Infof("[MessageApplied] core is closed, ignore message：%v", msg.Cid())
 		return nil
 	}
-	log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
+	//log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
 	core.wgStop.Add(1)
 	defer core.wgStop.Done()
 	trading := model.Message{
@@ -90,36 +97,57 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 	return nil
 }
 
-func (core *Core) processing() {
+func (core *Core) Rec() {
 	for item := range core.ch.Out {
-		msg := item.(*model.Message)
-		ctx := context.Background()
+		msg, ok := item.(*model.Message)
+		if !ok {
+			log.Errorf("[core.Rec()] msg:%v", item)
+			continue
+		}
+		if err := core.processing(msg); err != nil {
+			log.Errorf("[core.Rec()] processing msg:+%v,err:%v", msg, err)
+		}
+	}
+	core.msgDone <- struct{}{}
+}
 
+func (core *Core) processing(msg *model.Message) error {
+	return core.processPool.Submit(func() {
+		ctx := context.Background()
 		from := msg.Msg.From
 		to := msg.Msg.To
 
 		if core.actor != nil {
 			var (
+				wg  sync.WaitGroup
 				err error
 			)
-			from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
-			if err != nil {
-				// just to log getActorAddress error
-				log.Errorf("[processing] from address:%v called  getActorID,err:%v", msg.Msg.From, err)
-			}
+			wg.Add(2)
+			threading.GoSafe(func() {
+				defer wg.Done()
+				from, err = core.actor.GetActorAddress(ctx, msg.TipSet, from)
+				if err != nil {
+					// just to log getActorAddress error
+					log.Errorf("[processing] from address:%v called  getActorID,err:%v", msg.Msg.From, err)
+				}
+			})
 
-			to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
-			if err != nil {
-				// just to log getActorAddress error
-				log.Errorf("[processing] to address:%v called  getActorID,err:%v", msg.Msg.To, err)
-			}
+			threading.GoSafe(func() {
+				defer wg.Done()
+				to, err = core.actor.GetActorAddress(ctx, msg.TipSet, to)
+				if err != nil {
+					// just to log getActorAddress error
+					log.Errorf("[processing] to address:%v called  getActorID,err:%v", msg.Msg.To, err)
+				}
+			})
+			wg.Wait()
 		}
-		log.Infof("[processing] from:%v,to:%v", from.String(), to.String())
-		if err := core.sub.Notify(ctx, from.String(), to.String(), msg); err != nil {
-			log.Errorf("[Core processing] notify failed: %v", err)
+		//log.Infof("[processing] from:%v,to:%v", from.String(), to.String())
+		err := core.sub.Notify(ctx, from.String(), to.String(), msg)
+		if err != nil {
+			log.Errorf("[processing] sub.Notify err:%v", err)
 		}
-	}
-	core.msgDone <- struct{}{}
+	})
 }
 
 func (core *Core) IsClosed() bool {

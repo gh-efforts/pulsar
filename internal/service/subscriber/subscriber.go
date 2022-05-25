@@ -84,7 +84,7 @@ func (sub *Subscriber) Notify(ctx context.Context, from, to string, msg *model.M
 	}
 	if !ok {
 		sub.wg.Done()
-		log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
+		//log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
 		return nil
 	}
 

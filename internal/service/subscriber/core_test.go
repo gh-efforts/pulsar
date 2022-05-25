@@ -2,8 +2,13 @@ package subscriber
 
 import (
 	"context"
+	"reflect"
+	"strconv"
 	"sync"
 	"testing"
+	"unsafe"
+
+	"github.com/bitrainforest/filmeta-hic/model"
 
 	"github.com/filecoin-project/lotus/chain/actors/builtin"
 
@@ -176,7 +181,7 @@ func NewTestCore() (*Core, error) {
 	return core, nil
 }
 
-func BenchmarkCore_MessageApplied(b *testing.B) {
+func BenchmarkMessageApplied(b *testing.B) {
 	core, err := NewTestCore()
 	assert.Nil(b, err)
 	defer func() {
@@ -194,6 +199,37 @@ func BenchmarkCore_MessageApplied(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := core.MessageApplied(ctx, nil, cid.Undef, &msg, nil, false)
+		assert.Nil(b, err)
+	}
+}
+
+func RandCId(v string) cid.Cid {
+	NewCid := cid.Undef
+	val := reflect.ValueOf(&NewCid).Elem().FieldByName("str")
+	val = reflect.NewAt(val.Type(), unsafe.Pointer(val.UnsafeAddr())).Elem()
+	nv := reflect.ValueOf(v)
+	val.Set(nv)
+	return NewCid
+}
+
+func BenchmarkProcessing(b *testing.B) {
+	core, err := NewTestCore()
+	assert.Nil(b, err)
+	defer func() {
+		err := recover()
+		assert.Nil(b, err)
+	}()
+	msg := model.Message{
+		Msg: &types.Message{
+			To:   builtin.ReserveAddress,
+			From: builtin.CronActorAddr,
+		},
+		TipSet: &types.TipSet{},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		msg.MCid = RandCId(strconv.Itoa(i) + "processing")
+		err := core.processing(&msg)
 		assert.Nil(b, err)
 	}
 }
