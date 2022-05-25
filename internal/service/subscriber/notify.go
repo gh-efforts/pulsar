@@ -35,6 +35,7 @@ func (n *notify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Mess
 	for _, appId := range appIds {
 		wg.Add(1)
 		to := appId
+		// todo should  to control the number of goroutine?
 		threading.GoSafe(func() {
 			defer wg.Done()
 			msgByte, err := msg.Marshal()
@@ -42,6 +43,7 @@ func (n *notify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Mess
 				log.Errorf("[core.processing] marshal msg:%+v err: %s", msg, err)
 				return
 			}
+			// todo add retry
 			if err := n.connect.Publish(to, msgByte); err != nil {
 				log.Errorf("[core.processing] publish appId:%v msg:%+v err: %s", to, msg, err)
 			}

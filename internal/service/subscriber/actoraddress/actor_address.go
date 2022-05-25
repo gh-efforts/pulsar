@@ -29,7 +29,6 @@ func (actor *ActorAddress) GetActorAddress(ctx context.Context, next *types.TipS
 	a address.Address) (address.Address, error) {
 	c, ok := actor.m.Load(a)
 	if ok {
-		log.Infof("[GetActorAddress] actorAddressMap.Load(%s) = %s", a, c)
 		return c.(address.Address), nil
 	}
 
