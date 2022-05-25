@@ -10,6 +10,8 @@ import (
 const (
 	DefaultWorkPoolNum = 2000
 	MaxWorkPoolNum     = 3000
+	DefaultLockExpire  = 20   // seconds
+	MaxLockExpire      = 7200 //one day
 )
 
 type (
@@ -18,6 +20,7 @@ type (
 		workPoolNum      int64
 		appSubDao        dao.UserAppSubDao
 		addressMarkCache cache.AddressMark
+		lockerExpire     uint32
 	}
 )
 
@@ -26,6 +29,13 @@ func defaultOpts() Opts {
 		addressMarkCache: cache.NewAddressMark(context.Background()),
 		appSubDao:        dao.NewUserAppSubDao(),
 		workPoolNum:      DefaultWorkPoolNum,
+		lockerExpire:     DefaultLockExpire,
+	}
+}
+
+func WithLockerExpire(lockerExpire uint32) OptFn {
+	return func(opts *Opts) {
+		opts.lockerExpire = lockerExpire
 	}
 }
 

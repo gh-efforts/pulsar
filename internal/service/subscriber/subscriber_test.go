@@ -194,14 +194,14 @@ func TestSubscriber_Notify(t *testing.T) {
 		{
 			name: "TestSubscriber_Notify1",
 			args: args{
-				initAppIds: []string{"test1", "test2"},
-				userSubDao: &MockUserAppSubDao{appIds: []string{"test1", "test2"}},
+				initAppIds: []string{"test10", "test11"},
+				userSubDao: &MockUserAppSubDao{appIds: []string{"test10", "test11"}},
 				markCache:  &MockAddressMark{},
 				notify:     &MockNotify{},
 				round:      150,
 			},
 			want: want{
-				initAppIds:  []string{"test1", "test2"},
+				initAppIds:  []string{"test10", "test11"},
 				notifyCount: 300,
 			},
 		},
@@ -243,12 +243,13 @@ func TestSubscriber_Notify(t *testing.T) {
 			sub, err := NewSub(tt.args.initAppIds, tt.args.notify,
 				WithUserAppSubDao(tt.args.userSubDao),
 				WithAddressMarkCache(tt.args.markCache),
+				WithLockerExpire(0),
 			)
 			assert.Nil(t, err)
 			for i := 0; i < tt.args.round; i++ {
 				atomic.AddInt64(&cidval, 1)
 				msg := &model2.Message{}
-				msg.MCid = RandCId(strconv.Itoa(int(cidval)) + "Notify")
+				msg.MCid = RandCId(strconv.Itoa(int(cidval)) + "NotifyCount")
 				err = sub.Notify(context.Background(), fmt.Sprintf("test%d", i), "test", msg)
 				assert.Nil(t, err)
 			}
@@ -258,13 +259,14 @@ func TestSubscriber_Notify(t *testing.T) {
 		})
 	}
 }
+
 func BenchmarkNotify(b *testing.B) {
 	notify, err := NewNotify(nats.DefaultURL)
 	assert.Nil(b, err)
 
-	sub, err := NewSub([]string{"test1", "test2"}, notify)
-	WithUserAppSubDao(MockUserAppSubDao{appIds: []string{"test1", "test2"}})
-	WithAddressMarkCache(MockAddressMark{})
+	sub, err := NewSub([]string{"test1", "test2"},
+		notify, WithUserAppSubDao(MockUserAppSubDao{appIds: []string{"test1", "test2"}}), WithAddressMarkCache(MockAddressMark{}))
+
 	assert.Nil(b, err)
 	defer func() {
 		sub.Close()

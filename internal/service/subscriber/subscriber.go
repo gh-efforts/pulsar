@@ -46,6 +46,15 @@ func NewSub(initAppIds []string, notify Notify, optFns ...OptFn) (*Subscriber, e
 		opts.workPoolNum = MaxWorkPoolNum
 	}
 
+	// if lockerExpire=0, that means that when the message processing is complete,
+	// the msg key is  deleted
+	if opts.lockerExpire < 0 {
+		opts.lockerExpire = 0
+	}
+	if opts.lockerExpire > MaxLockExpire {
+		opts.lockerExpire = MaxLockExpire
+	}
+
 	Sub = &Subscriber{
 		subAllAppIds: sync.Map{},
 		opts:         &opts,
@@ -76,18 +85,20 @@ func (sub *Subscriber) RemoveAppId(appId string) {
 func (sub *Subscriber) Notify(ctx context.Context, from, to string, msg *model.Message) error {
 	sub.wg.Add(1)
 
-	// todo to change default lockExpireTime?
-	ok, err := locker.NewRedisLock(ctx, msg.MCid.String(), 20).Acquire(ctx)
+	lockerCli := locker.NewRedisLock(ctx, msg.MCid.String(), sub.opts.lockerExpire)
+	ok, err := lockerCli.Acquire(ctx)
 	if err != nil {
 		sub.wg.Done()
 		return fmt.Errorf("[MessageApplied] Notify Mcid: %s failed: %v", msg.MCid.String(), err)
 	}
 	if !ok {
 		sub.wg.Done()
-		//log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
+		log.Infof("[MessageApplied] locked message %s", msg.MCid.String())
 		return nil
 	}
-
+	if sub.opts.lockerExpire == 0 {
+		defer lockerCli.Release(ctx)
+	}
 	return sub.workPool.Submit(func() {
 		appIds := sub.getSubsByAddress(ctx, from, to)
 		if len(appIds) == 0 {
