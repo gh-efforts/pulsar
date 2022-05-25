@@ -1,4 +1,4 @@
-package subscriber
+package actoraddress
 
 import (
 	"context"
@@ -13,13 +13,6 @@ import (
 	"github.com/filecoin-project/lotus/chain/store"
 	"github.com/filecoin-project/lotus/chain/types"
 )
-
-type Address interface {
-	GetActorAddress(ctx context.Context, next *types.TipSet,
-		a address.Address) (address.Address, error)
-}
-
-var _ Address = (*ActorAddress)(nil)
 
 type ActorAddress struct {
 	cs *store.ChainStore
@@ -40,7 +33,7 @@ func (actor *ActorAddress) GetActorAddress(ctx context.Context, next *types.TipS
 		return c.(address.Address), nil
 	}
 
-	idFunc, err := actor.GetActorIDFunc(ctx, next)
+	idFunc, err := actor.getActorIDFunc(ctx, next)
 	if err != nil {
 		return a, err
 	}
@@ -58,7 +51,7 @@ func (actor *ActorAddress) GetActorAddress(ctx context.Context, next *types.TipS
 	return a, nil
 }
 
-func (actor *ActorAddress) GetActorIDFunc(ctx context.Context, next *types.TipSet) (func(a address.Address) (address.Address, bool, error), error) {
+func (actor *ActorAddress) getActorIDFunc(ctx context.Context, next *types.TipSet) (func(a address.Address) (address.Address, bool, error), error) {
 	adtStore := actor.cs.ActorStore(ctx)
 	nextStateTree, err := state.LoadStateTree(adtStore, next.ParentState())
 	if err != nil {

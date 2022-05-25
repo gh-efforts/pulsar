@@ -3,7 +3,8 @@ package handler
 import (
 	"context"
 
-	"github.com/bitrainforest/pulsar/internal/service/subscriber"
+	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
+
 	"github.com/filecoin-project/go-address"
 
 	"github.com/bitrainforest/pulsar/api/middleware"
@@ -70,7 +71,7 @@ func (userApp UserAppHandler) GetActorAddress(ctx context.Context, a string) (ad
 		return address.Address{}, codex.ErrService.FormatErrMsg(err)
 	}
 
-	actor := subscriber.NewProxyActorAddress()
+	actor := actoraddress.NewProxyActorAddress()
 	actorAddress, err := actor.GetActorAddress(ctx, nil, addr)
 	if err != nil {
 		return address.Address{}, codex.ErrService.FormatErrMsg(err)

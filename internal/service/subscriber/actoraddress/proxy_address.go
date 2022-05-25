@@ -1,4 +1,4 @@
-package subscriber
+package actoraddress
 
 import (
 	"context"
@@ -39,8 +39,6 @@ type (
 		Result string `json:"result"`
 	}
 )
-
-var _ Address = (*ProxyActorAddress)(nil)
 
 type (
 	ProxyActorAddress struct {

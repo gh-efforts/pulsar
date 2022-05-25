@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
+
 	"github.com/panjf2000/ants/v2"
 
 	"github.com/filecoin-project/lotus/chain/store"
@@ -45,7 +47,7 @@ type Core struct {
 	//we are slow to process message if we receive message and process them synchronously.
 	//this can cause a backlog of messages
 	processPool *ants.Pool
-	actor       *ActorAddress
+	actor       Address
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
@@ -67,7 +69,7 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 }
 
 func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
-	actor := NewActorAddress(cs)
+	actor := actoraddress.NewActorAddress(cs)
 	core.actor = actor
 	return core
 }
