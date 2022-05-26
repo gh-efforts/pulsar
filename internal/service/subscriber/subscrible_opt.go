@@ -3,6 +3,8 @@ package subscriber
 import (
 	"context"
 
+	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
+
 	"github.com/bitrainforest/pulsar/internal/cache"
 	"github.com/bitrainforest/pulsar/internal/dao"
 )
@@ -20,6 +22,7 @@ type (
 		workPoolNum      int64
 		appSubDao        dao.UserAppSubDao
 		addressMarkCache cache.AddressMark
+		actorAddress     Address
 		lockerExpire     uint32
 	}
 )
@@ -30,6 +33,13 @@ func defaultOpts() Opts {
 		appSubDao:        dao.NewUserAppSubDao(),
 		workPoolNum:      DefaultWorkPoolNum,
 		lockerExpire:     DefaultLockExpire,
+		actorAddress:     actoraddress.NewProxyActorAddress(),
+	}
+}
+
+func WithAddress(address Address) OptFn {
+	return func(opts *Opts) {
+		opts.actorAddress = address
 	}
 }
 

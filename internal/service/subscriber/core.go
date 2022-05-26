@@ -34,14 +34,6 @@ func WithMsgBuffer(buffer int64) CoreOpt {
 	}
 }
 
-func WithAddress(a Address) CoreOpt {
-	return func(c *Core) {
-		if a != nil {
-			c.address = a
-		}
-	}
-}
-
 type Core struct {
 	closed      bool
 	msgDone     chan struct{}
@@ -56,7 +48,6 @@ type Core struct {
 	//we are slow to process message if we receive message and process them synchronously.
 	//this can cause a backlog of messages
 	processPool *ants.Pool
-	address     Address
 }
 
 func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
@@ -80,7 +71,7 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 
 func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 	actor := actoraddress.NewActorAddress(cs)
-	core.address = actor
+	core.sub.opts.actorAddress = actor
 	return core
 }
 
@@ -126,43 +117,9 @@ func (core *Core) Rec() {
 func (core *Core) processing(msg *model.Message) error {
 	core.processWait.Add(1)
 	ctx := context.Background()
-	from := msg.Msg.From
-	to := msg.Msg.To
-
 	return core.processPool.Submit(func() {
 		defer core.processWait.Done()
-		if core.address != nil {
-			var (
-				wg sync.WaitGroup
-			)
-			wg.Add(2)
-			threading.GoSafe(func() {
-				defer wg.Done()
-				var (
-					err error
-				)
-				from, err = core.address.GetActorAddress(ctx, msg.TipSet, from)
-				if err != nil {
-					// just to log getActorAddress error
-					log.Errorf("[processing] from address:%v MCid:%v,err:%v", msg.Msg.From, msg.MCid.String(), err.Error())
-				}
-			})
-
-			threading.GoSafe(func() {
-				defer wg.Done()
-				var (
-					err error
-				)
-				to, err = core.address.GetActorAddress(ctx, msg.TipSet, to)
-				if err != nil {
-					// just to log getActorAddress error
-					log.Errorf("[processing] to address:%v, MCid:%v,err:%v", msg.Msg.To, msg.MCid.String(), err.Error())
-				}
-			})
-			wg.Wait()
-		}
-		//log.Infof("[processing] from:%v,to:%v", from.String(), to.String())
-		err := core.sub.Notify(ctx, from.String(), to.String(), msg)
+		err := core.sub.Notify(ctx, msg)
 		if err != nil {
 			log.Errorf("[processing] sub.Notify err:%v", err)
 		}

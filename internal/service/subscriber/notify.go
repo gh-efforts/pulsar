@@ -13,7 +13,7 @@ import (
 )
 
 type Notify interface {
-	Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Message) error
+	Notify(appIds []string, msg model.NotifyMessage) error
 	Close()
 }
 
@@ -29,8 +29,7 @@ func NewNotify(natsUri string) (Notify, error) {
 	return &notify{connect: connect}, nil
 }
 
-func (n *notify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Message) error {
-	defer wgDone.Done()
+func (n *notify) Notify(appIds []string, msg model.NotifyMessage) error {
 	var wg sync.WaitGroup
 	for _, appId := range appIds {
 		wg.Add(1)
@@ -38,7 +37,7 @@ func (n *notify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Mess
 		// todo should  to control the number of goroutine?
 		threading.GoSafe(func() {
 			defer wg.Done()
-			msgByte, err := msg.Marshal()
+			msgByte, err := msg.Get()
 			if err != nil {
 				log.Errorf("[core.processing] marshal msg:%+v err: %s", msg, err)
 				return

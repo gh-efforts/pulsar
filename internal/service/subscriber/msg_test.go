@@ -26,31 +26,44 @@ func Test_countMsg(t *testing.T) {
 		{
 			name: "countMsg0",
 			args: args{trace: types.ExecutionTrace{
-				Subcalls: nil},
+				Msg:      &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+				Subcalls: nil,
 			},
-			want1: 0,
+			},
+			want1: 1,
 		},
 		{
 			name: "countMsg1",
 			args: args{trace: types.ExecutionTrace{
+				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 				Subcalls: []types.ExecutionTrace{
 					{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
 				}},
 			},
-			want1: 1,
+			want1: 2,
 		},
 
 		{
 			name: "countMsg3",
 			args: args{trace: types.ExecutionTrace{
 				Subcalls: []types.ExecutionTrace{
-					{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-					{Subcalls: []types.ExecutionTrace{
-						{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-					}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-				}},
+					{
+						Msg:      &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+						Subcalls: nil,
+					},
+					{
+						Subcalls: []types.ExecutionTrace{
+							{
+								Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+							},
+						},
+						Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+					},
+				},
+				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 			},
-			want1: 3,
+			},
+			want1: 4,
 		},
 
 		{
@@ -67,18 +80,21 @@ func Test_countMsg(t *testing.T) {
 							}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
 						}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
 					}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-				}},
+				},
+				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 			},
-			want1: 6,
+			},
+			want1: 7,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, got1 := countMsg(tt.args.trace)
-			assert.Equal(t, got1, tt.want1, fmt.Sprintf("countMsg() got = %v, want %v", got1, tt.want))
-			//if got1 != tt.want1 {
-			//	t.Errorf("countMsg() got1 = %v, want %v", got1, tt.want1)
-			//}
+			got1, got2 := countMsg(tt.args.trace)
+			if len(got1) != got2 {
+				t.Errorf("countMsg() got1 = %v, want %v", got1, tt.want1)
+			}
+			assert.Equal(t, got2, tt.want1, fmt.Sprintf("countMsg() got = %v, want %v", got2, tt.want))
+
 		})
 	}
 }

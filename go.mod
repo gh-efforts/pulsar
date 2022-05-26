@@ -46,7 +46,6 @@ require (
 	go.mongodb.org/mongo-driver v1.9.0
 	go.opentelemetry.io/otel v1.3.0
 	go.uber.org/fx v1.15.0
-	golang.org/x/exp v0.0.0-20210715201039-d37aa40e8013
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
@@ -342,6 +341,7 @@ require (
 	go.uber.org/zap v1.19.1 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/crypto v0.0.0-20211209193657-4570a0811e8b // indirect
+	golang.org/x/exp v0.0.0-20210715201039-d37aa40e8013 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
@@ -366,6 +366,7 @@ require (
 
 replace (
 	github.com/BitRainforest/filmeta-model => ./extern/model
+	github.com/bitrainforest/filmeta-hic v0.0.0-20220519103439-43c6daf8deec => /Users/wuqinqiang/work/company/filmeta-hic
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
 
 )

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
+	"github.com/filecoin-project/go-address"
 
 	"github.com/bitrainforest/filmeta-hic/model"
 
@@ -184,12 +184,24 @@ func NewTestCore(opts ...CoreOpt) (*Core, error) {
 	return core, nil
 }
 
+func NewDefaultTrace() types.ExecutionTrace {
+	t0123, _ := address.NewFromString("t0123") //nolint:errcheck
+	return types.ExecutionTrace{
+		Subcalls: []types.ExecutionTrace{
+			{Subcalls: []types.ExecutionTrace{
+				{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
+			}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
+		},
+		Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+	}
+}
+
 func TestProcessing(t *testing.T) {
 	mockNotify := &MockNotify{}
 	initAppIds := []string{"test", "test2"}
-	sub, err := NewSub(initAppIds, mockNotify)
+	sub, err := NewSub(initAppIds, mockNotify, WithLockerExpire(0))
 	assert.Nil(t, err)
-	core := NewCore(sub, WithAddress(actoraddress.NewProxyActorAddress()))
+	core := NewCore(sub)
 	var (
 		wg sync.WaitGroup
 	)
@@ -197,8 +209,9 @@ func TestProcessing(t *testing.T) {
 	for i := 0; i < count; i++ {
 		wg.Add(1)
 		msg := &model.Message{
-			MCid: RandCId(strconv.Itoa(i) + "Processing2"),
+			MCid: RandCId(strconv.Itoa(i) + "Processing22"),
 			Msg:  &types.Message{To: builtin.ReserveAddress, From: builtin.CronActorAddr},
+			Ret:  &vm.ApplyRet{ExecutionTrace: NewDefaultTrace()},
 		}
 		go func() {
 			defer wg.Done()
@@ -208,7 +221,7 @@ func TestProcessing(t *testing.T) {
 	}
 	wg.Wait()
 	core.Stop()
-	assert.Equal(t, mockNotify.count, int64(count*len(initAppIds)))
+	assert.Equal(t, int64(count*len(initAppIds)), mockNotify.count)
 
 }
 
@@ -244,7 +257,7 @@ func RandCId(v string) cid.Cid {
 }
 
 func BenchmarkProcessing(b *testing.B) {
-	core, err := NewTestCore(WithAddress(actoraddress.NewProxyActorAddress()))
+	core, err := NewTestCore()
 	assert.Nil(b, err)
 	defer func() {
 		err := recover()
@@ -256,6 +269,7 @@ func BenchmarkProcessing(b *testing.B) {
 			From: builtin.CronActorAddr,
 		},
 		TipSet: &types.TipSet{},
+		Ret:    &vm.ApplyRet{ExecutionTrace: NewDefaultTrace()},
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -20,8 +20,7 @@ type MockNotify struct {
 	count int64
 }
 
-func (m *MockNotify) Notify(wgDone *sync.WaitGroup, appIds []string, msg *model.Message) error {
-	defer wgDone.Done()
+func (m *MockNotify) Notify(appIds []string, msg model.NotifyMessage) error {
 	//time.Sleep(time.Duration(100+rand.Intn(400)) * time.Millisecond)
 	atomic.AddInt64(&m.count, int64(len(appIds)))
 	return nil
@@ -33,6 +32,7 @@ func (m *MockNotify) Close() {
 func Test_Notify(t *testing.T) {
 	notify, err := NewNotify(nats.DefaultURL)
 	assert.Nil(t, err)
+	defer notify.Close()
 	sub, err := NewSub([]string{"test1", "test2"}, notify)
 	assert.Nil(t, err)
 	testAppId := "notify_test_all_001"
@@ -61,7 +61,8 @@ func Test_Notify(t *testing.T) {
 	for i := 0; i < nums; i++ {
 		wg.Add(1)
 		go func() {
-			err := notify.Notify(&wg, []string{testAppId}, &model.Message{})
+			defer wg.Done()
+			err := notify.Notify([]string{testAppId}, &model.Message{})
 			assert.Nil(t, err)
 		}()
 	}
