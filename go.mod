@@ -123,6 +123,7 @@ require (
 	github.com/gbrlsnchs/jwt/v3 v3.0.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gdamore/tcell/v2 v2.2.0 // indirect
+	github.com/gin-contrib/pprof v1.3.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
@@ -367,5 +368,4 @@ require (
 replace (
 	github.com/BitRainforest/filmeta-model => ./extern/model
 	github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
-
 )

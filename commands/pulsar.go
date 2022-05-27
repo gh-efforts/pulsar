@@ -64,7 +64,7 @@ var (
 			// http service
 			httpOpts = append(httpOpts, http.Address(fixedEnv.HttpAddr))
 			httpServer := httpservice.GetHttpServer(func(engine *gin.Engine) {
-				router.Register(engine)
+				router.Register(engine, fixedEnv)
 			}, nil, httpOpts...)
 
 			//  daemon service
