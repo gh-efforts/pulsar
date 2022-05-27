@@ -126,23 +126,18 @@ func TestCore_MessageApplied(t *testing.T) {
 func TestCore_Stop(t *testing.T) {
 	core, err := NewTestCore()
 	assert.Nil(t, err)
-	defer func() {
-		err := recover()
-		assert.Nil(t, err)
-	}()
+	core.Stop()
+	id := cid.Undef
+	err = core.MessageApplied(context.Background(), nil, id, nil, nil, false)
+	assert.Equal(t, err, ErrClosed)
 
-	var (
-		wg sync.WaitGroup
-	)
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			core.Stop()
-			assert.Equal(t, core.IsClosed(), true)
-		}()
-	}
-	wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	core2, err := NewTestCore()
+	assert.Nil(t, err)
+	err = core2.MessageApplied(ctx, nil, id, nil, nil, false)
+	assert.Equal(t, err, ErrCtxDone)
+
 }
 
 func MustLoadTestEnv() {

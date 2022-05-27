@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/bitrainforest/pulsar/internal/service/subscriber/actoraddress"
 
 	"github.com/panjf2000/ants/v2"
@@ -22,6 +24,11 @@ import (
 const (
 	DefaultMsgBuffer = 500
 	CoreWorkerNum    = 100
+)
+
+var (
+	ErrClosed  = errors.New("subscriber closed")
+	ErrCtxDone = errors.New("subscriber context done")
 )
 
 type CoreOpt func(*Core)
@@ -77,8 +84,7 @@ func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 
 func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid.Cid, msg *types.Message, ret *vm.ApplyRet, implicit bool) error {
 	if core.IsClosed() {
-		log.Infof("[MessageApplied] core is closed, ignore message：%v", msg.Cid())
-		return nil
+		return ErrClosed
 	}
 	//log.Infof("[Core]Received  message:%v,from:%v,to:%v", mcid.String(), msg.From.String(), msg.To.String())
 	core.lockWait.Add(1)
@@ -93,7 +99,7 @@ func (core *Core) MessageApplied(ctx context.Context, ts *types.TipSet, mcid cid
 	select {
 	case <-ctx.Done():
 		log.Errorf("[Core MessageApplied] core.MessageApplied: context msgDone: %s", ctx.Err())
-		return nil
+		return ErrCtxDone
 	default:
 		core.ch.In <- &trading
 	}
