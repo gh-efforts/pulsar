@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bitrainforest/filmeta-hic/core/threading"
+
 	"github.com/filecoin-project/go-address"
 
 	"github.com/filecoin-project/lotus/chain/types"
@@ -83,21 +85,37 @@ func (sub *Subscriber) RemoveAppId(appId string) {
 	sub.subAllAppIds.Delete(appId)
 }
 
-func (sub *Subscriber) GetActorAddress(ctx context.Context, from,
-	to address.Address, tip *types.TipSet) (address.Address, address.Address) {
+func (sub *Subscriber) GetActorAddress(ctx context.Context, from, to address.Address,
+	tip *types.TipSet) (address.Address, address.Address) {
 	var (
-		err error
+		wg sync.WaitGroup
 	)
-	from, err = sub.opts.actorAddress.GetActorAddress(ctx, tip, from)
-	if err != nil {
-		// just to log getActorAddress error
-		log.Errorf("[processing] from address:%v,err:%v", from, err.Error())
-	}
-	to, err = sub.opts.actorAddress.GetActorAddress(ctx, tip, to)
-	if err != nil {
-		// just to log getActorAddress error
-		log.Errorf("[processing] to address:%v,err:%v", to, err.Error())
-	}
+	wg.Add(2)
+
+	threading.GoSafe(func() {
+		defer wg.Done()
+		var (
+			err error
+		)
+		if from, err = sub.opts.actorAddress.GetActorAddress(ctx, tip, from); err != nil {
+			// just to log getActorAddress error
+			log.Errorf("[processing] from address:%v,err:%v", from, err.Error())
+		}
+	})
+
+	threading.GoSafe(func() {
+		defer wg.Done()
+
+		var (
+			err error
+		)
+		to, err = sub.opts.actorAddress.GetActorAddress(ctx, tip, to)
+		if err != nil {
+			// just to log getActorAddress error
+			log.Errorf("[processing] to address:%v,err:%v", to, err.Error())
+		}
+	})
+	wg.Wait()
 	return from, to
 }
 
@@ -120,6 +138,7 @@ func (sub *Subscriber) Notify(ctx context.Context, msg *model.Message) error {
 	if sub.opts.lockerExpire == 0 {
 		defer lockerCli.Release(ctx)
 	}
+
 	return sub.workPool.Submit(func() {
 		defer sub.wg.Done()
 		// step1 notify subscribers who have  sub to  all appIds
@@ -151,13 +170,15 @@ func (sub *Subscriber) Notify(ctx context.Context, msg *model.Message) error {
 				return
 			}
 			isSubCall := true
-			if typeMessage.Cid().String() == msg.Msg.Cid().String() {
+			if msg.Msg.Cid().Equals(typeMessage.Cid()) {
 				isSubCall = false
 			}
+
 			oneMsg := model.OneMessage{
 				Msg:       typeMessage,
 				Implicit:  msg.IsImplicit(),
 				IsSubCall: isSubCall,
+				TipSet:    msg.TipSet,
 			}
 			pipe <- NewPackMsg(oneMsg, appIds)
 
@@ -190,6 +211,7 @@ func (sub *Subscriber) GetAppIdsByAddress() func(ctx context.Context, from, to s
 				[]string{from, to})
 			if err != nil {
 				log.Errorf("[core.processing]: find by addresses err: %s", err)
+				return
 			}
 			for _, item := range list {
 				appIds = append(appIds, item.AppId)

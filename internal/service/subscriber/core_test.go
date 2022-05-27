@@ -31,6 +31,7 @@ import (
 )
 
 func init() {
+	// todo replace
 	MustLoadTestEnv()
 }
 

@@ -76,11 +76,11 @@ func (p *ProxyActorAddress) GetActorAddress(ctx context.Context, next *types.Tip
 	_, err := p.client.R().SetHeader("Content-Type", "application/json").
 		SetBody(req).SetResult(&resp).Post(p.uri)
 	if err != nil {
-		return address.Address{}, err
+		return a, err
 	}
 	if resp.Error.Code != 0 {
 		log.Errorf("get actor address error: %+v", resp.Error)
-		return address.Address{}, fmt.Errorf("address:%v err:%v", a.String(), resp.Error.Msg)
+		return a, fmt.Errorf("address:%v err:%v", a.String(), resp.Error.Msg)
 	}
 	if resp.Result != "" {
 		return address.NewFromString(resp.Result)

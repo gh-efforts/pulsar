@@ -124,10 +124,9 @@ func (core *Core) Rec() {
 func (core *Core) processing(msg *model.Message) error {
 	core.processWait.Add(1)
 	ctx := context.Background()
-	m := *msg
 	return core.processPool.Submit(func() {
 		defer core.processWait.Done()
-		err := core.sub.Notify(ctx, &m)
+		err := core.sub.Notify(ctx, msg)
 		if err != nil {
 			log.Errorf("[processing] sub.Notify err:%v", err)
 		}
