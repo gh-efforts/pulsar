@@ -205,7 +205,7 @@ func TestProcessing(t *testing.T) {
 	var (
 		wg sync.WaitGroup
 	)
-	count := rand.Intn(100) + 50
+	count := rand.Intn(20) + 30
 	for i := 0; i < count; i++ {
 		wg.Add(1)
 		msg := &model.Message{

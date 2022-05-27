@@ -63,7 +63,30 @@ func (m MockUserAppSubDao) Cancel(ctx context.Context, appId, address string) (e
 	panic("implement me")
 }
 
-var _ cache.AddressMark = &MockAddressMark{}
+func GenerateAddress(item string) address.Address {
+	a, _ := address.NewFromString(item) ////nolint:errcheck
+	return a
+}
+
+var (
+	_ cache.AddressMark = &MockAddressMark{}
+
+	// three msgs
+	DefaultTrace = types.ExecutionTrace{
+		Msg: &types.Message{To: GenerateAddress("t0555"), From: GenerateAddress("t0666"), Method: 5, Nonce: 1},
+		Subcalls: []types.ExecutionTrace{
+			{
+				Msg: &types.Message{To: GenerateAddress("t0111"), From: GenerateAddress("t0222"), Method: 5, Nonce: 1},
+				Subcalls: []types.ExecutionTrace{
+					{
+						Msg: &types.Message{To: GenerateAddress("t0333"), From: GenerateAddress("t0444"), Method: 5, Nonce: 1},
+					},
+				},
+			},
+		},
+	}
+	initAppIds = []string{"wq", "wq2"}
+)
 
 type MockAddressMark struct {
 	markMap map[string]struct{}
@@ -192,8 +215,7 @@ func TestSubscriber_AppendAppId_AND_RemoveAppID(t *testing.T) {
 
 }
 
-func TestSubscriber_Notify0(t *testing.T) {
-	initAppIds := []string{"wq", "wq2"}
+func TestSubscriber_NoNotify(t *testing.T) {
 	m := &MockNotify{}
 	sub, err := NewSub(initAppIds, m, WithAddress(actoraddress.NewProxyActorAddress()))
 	assert.Nil(t, err)
@@ -203,10 +225,10 @@ func TestSubscriber_Notify0(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		msg := &model2.Message{
-			MCid:     RandCId(strconv.Itoa(i) + "Notify0"),
+			MCid:     RandCId(strconv.Itoa(i) + "NoNotify"),
 			Msg:      &types.Message{To: builtin.ReserveAddress, From: builtin.CronActorAddr},
 			Ret:      &vm.ApplyRet{ExecutionTrace: NewDefaultTrace()},
-			Implicit: true,
+			Implicit: true, // if Implicit is true, then the message will not be sent to the initAppIds
 		}
 		go func() {
 			defer wg.Done()
@@ -219,36 +241,62 @@ func TestSubscriber_Notify0(t *testing.T) {
 	assert.Equal(t, 0, int(m.count))
 }
 
-func TestSubscriber_Notify1(t *testing.T) {
-	initAppIds := []string{"wq", "wq2"}
+func TestSubscriber_NotifyOnlyInitAppIds(t *testing.T) {
+	m := &MockNotify{}
+	appIds := initAppIds
+	sub, err := NewSub(appIds, m, WithAddress(actoraddress.NewProxyActorAddress()))
+	assert.Nil(t, err)
+	var (
+		wg sync.WaitGroup
+	)
+	// three msgs
+	trace := DefaultTrace
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		msg := &model2.Message{
+			MCid:     RandCId(strconv.Itoa(i) + "NotifyOnlyInitAppIds"),
+			Msg:      &types.Message{To: builtin.ReserveAddress, From: builtin.CronActorAddr},
+			Ret:      &vm.ApplyRet{ExecutionTrace: trace},
+			Implicit: false,
+		}
+		go func() {
+			defer wg.Done()
+			err := sub.Notify(context.Background(), msg)
+			assert.Nil(t, err)
+		}()
+	}
+	wg.Wait()
+	sub.Close()
+	assert.Equal(t, int64(10*len(appIds)), m.count)
+}
+
+func TestSubscriber_NotifyOnlySpecialAppId(t *testing.T) {
 	m := &MockNotify{}
 
-	t0123, _ := address.NewFromString("t0123") //nolint:errcheck
-
+	// mark t0111 address  that means address is subscribed by some appIds
+	t111 := GenerateAddress("t0111") //nolint:errcheck
 	markAddressList := map[string]struct{}{
-		t0123.String(): {},
+		t111.String(): {},
 	}
+
+	// init appIds is empty
+	appIds := []string{}
 
 	// three msgs
-	trace := types.ExecutionTrace{
-		Subcalls: []types.ExecutionTrace{
-			{
-				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
-				Subcalls: []types.ExecutionTrace{
-					{
-						Subcalls: nil,
-						Msg:      &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
-					},
-				},
-			},
-		},
-		Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
-	}
+	traceMsg := DefaultTrace
 
+	// append a message to traceMsg
+	traceMsg.Subcalls = append(traceMsg.Subcalls, types.ExecutionTrace{
+		Msg: &types.Message{To: GenerateAddress("t0111"), From: GenerateAddress("t0666"), Method: 5, Nonce: 1},
+	})
+
+	// "wq", "wq2",wq3 subscribe to t0111
+	subAddressList := []string{"wq", "wq2", "wq3"}
 	// two appIds subscribe address of ReserveAddress
-	subDao := MockUserAppSubDao{appIds: []string{"wq", "wq2"}}
+	subDao := MockUserAppSubDao{appIds: subAddressList}
 
-	sub, err := NewSub(initAppIds, m,
+	sub, err := NewSub(appIds, m,
 		WithAddress(actoraddress.NewProxyActorAddress()),
 		WithUserAppSubDao(subDao),
 		WithAddressMarkCache(NewMockMockAddressMark(markAddressList)),
@@ -262,9 +310,9 @@ func TestSubscriber_Notify1(t *testing.T) {
 	for i := 0; i < randCount; i++ {
 		wg.Add(1)
 		msg := &model2.Message{
-			MCid:     RandCId(strconv.Itoa(i) + "Notify01"),
+			MCid:     RandCId(strconv.Itoa(i) + "NotifyOnlySpecialAppId"),
 			Msg:      &types.Message{To: builtin.ReserveAddress, From: builtin.CronActorAddr},
-			Ret:      &vm.ApplyRet{ExecutionTrace: trace},
+			Ret:      &vm.ApplyRet{ExecutionTrace: traceMsg},
 			Implicit: false,
 		}
 		go func() {
@@ -275,105 +323,62 @@ func TestSubscriber_Notify1(t *testing.T) {
 	}
 	wg.Wait()
 	sub.Close()
-	// 2*randCount + 2*3*randCount
-	assert.Equal(t, 2*randCount+2*3*randCount, int(m.count))
+	// msgs contain two msg for t0111
+	subAddressCount := len(subAddressList) * randCount * 2
+	assert.Equal(t, int64(subAddressCount), m.count, "rand count: "+strconv.Itoa(randCount))
 }
 
-//func TestSubscriber_Notify(t *testing.T) {
-//	type args struct {
-//		initAppIds []string
-//		userSubDao dao.UserAppSubDao
-//		markCache  cache.AddressMark
-//		round      int
-//		notify     *MockNotify
-//	}
-//	type want struct {
-//		initAppIds  []string
-//		notifyCount int64
-//	}
-//
-//	tests := []struct {
-//		name string
-//		args args
-//		want want
-//	}{
-//		{
-//			name: "TestSubscriber_Notify1",
-//			args: args{
-//				initAppIds: []string{"test10", "test11"},
-//				userSubDao: &MockUserAppSubDao{appIds: []string{"test10", "test11"}},
-//				markCache:  &MockAddressMark{},
-//				notify:     &MockNotify{},
-//				round:      150,
-//			},
-//			want: want{
-//				initAppIds:  []string{"test10", "test11"},
-//				notifyCount: 300,
-//			},
-//		},
-//		{
-//			name: "TestSubscriber_Notify2",
-//			args: args{
-//				initAppIds: []string{"test2", "test3"},
-//				userSubDao: &MockUserAppSubDao{appIds: []string{"test1", "test2"}},
-//				markCache:  &MockAddressMark{},
-//				notify:     &MockNotify{},
-//				round:      200,
-//			},
-//			want: want{
-//				initAppIds:  []string{"test2", "test3"},
-//				notifyCount: 400,
-//			},
-//		},
-//
-//		{
-//			name: "TestSubscriber_Notify3",
-//			args: args{
-//				initAppIds: []string{"test4", "test5"},
-//				userSubDao: &MockUserAppSubDao{appIds: []string{"test6", "test7"}},
-//				markCache:  &MockAddressMark{},
-//				notify:     &MockNotify{},
-//				round:      100,
-//			},
-//			want: want{
-//				initAppIds:  []string{"test4", "test5"},
-//				notifyCount: 400,
-//			},
-//		},
-//	}
-//
-//	var cidval int64 = 0
-//	t0123, err := address.NewFromString("t0123")
-//	assert.Nil(t, err)
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			sub, err := NewSub(tt.args.initAppIds, tt.args.notify,
-//				WithUserAppSubDao(tt.args.userSubDao),
-//				WithAddressMarkCache(tt.args.markCache),
-//				WithLockerExpire(0),
-//				WithAddress(actoraddress.NewProxyActorAddress()),
-//			)
-//			assert.Nil(t, err)
-//			for i := 0; i < tt.args.round; i++ {
-//				atomic.AddInt64(&cidval, 1)
-//				msg := &model2.Message{}
-//				msg.Ret = &vm.ApplyRet{ExecutionTrace: NewDefaultTrace()}
-//				msg.MCid = RandCId(strconv.Itoa(int(cidval)) + "NotifyCount")
-//				msg.Msg = &types.Message{
-//					Version: 0,
-//					To:      t0123,
-//					From:    t0123,
-//				}
-//				err = sub.Notify(context.Background(), msg)
-//				assert.Nil(t, err)
-//			}
-//			sub.Close()
-//			assert.Equal(t, tt.args.initAppIds, tt.want.initAppIds)
-//			assert.Equal(t, tt.args.notify.count, tt.want.notifyCount)
-//		})
-//	}
-//}
+func TestSubscriber_NotifyMixedMode(t *testing.T) {
+	m := &MockNotify{}
+	// mark t0111 address  that means address is subscribed by some appIds
+	t111 := GenerateAddress("t0111") //nolint:errcheck
+	markAddressList := map[string]struct{}{
+		t111.String(): {},
+	}
+	// init appIds is empty
+	appIds := initAppIds
+	appIds = append(appIds, "addOne")
+
+	// three msgs
+	traceMsg := DefaultTrace
+
+	// "wq", "wq2",wq3 subscribe to t0111
+	subAddressList := []string{"wq", "wq2", "wq3"}
+	// two appIds subscribe address of ReserveAddress
+	subDao := MockUserAppSubDao{appIds: subAddressList}
+
+	sub, err := NewSub(appIds, m,
+		WithAddress(actoraddress.NewProxyActorAddress()),
+		WithUserAppSubDao(subDao),
+		WithAddressMarkCache(NewMockMockAddressMark(markAddressList)),
+		WithLockerExpire(0))
+	assert.Nil(t, err)
+
+	var (
+		wg sync.WaitGroup
+	)
+	randCount := rand.Intn(10) + 10
+	for i := 0; i < randCount; i++ {
+		wg.Add(1)
+		msg := &model2.Message{
+			MCid:     RandCId(strconv.Itoa(i) + "NotifyMixedMode"),
+			Msg:      &types.Message{To: GenerateAddress("t0555"), From: GenerateAddress("t0666"), Method: 5, Nonce: 1},
+			Ret:      &vm.ApplyRet{ExecutionTrace: traceMsg},
+			Implicit: false,
+		}
+		go func() {
+			defer wg.Done()
+			err := sub.Notify(context.Background(), msg)
+			assert.Nil(t, err)
+		}()
+	}
+	wg.Wait()
+	sub.Close()
+	// msgs contain two msg for t0111
+	initAppIds := randCount * len(appIds)
+	subAddressCount := len(subAddressList) * randCount
+	assert.Equal(t, int64(initAppIds+subAddressCount), m.count, "rand count: "+strconv.Itoa(randCount))
+}
 
 func BenchmarkNotify(b *testing.B) {
 	notify, err := NewNotify(nats.DefaultURL)

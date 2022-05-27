@@ -139,9 +139,6 @@ func (sub *Subscriber) Notify(ctx context.Context, msg *model.Message) error {
 				source <- item
 			}
 		}).Walk(func(item interface{}, pipe chan<- interface{}) {
-			if item == nil {
-				return
-			}
 			typeMessage, ok := item.(types.Message)
 			if !ok {
 				return
@@ -153,10 +150,9 @@ func (sub *Subscriber) Notify(ctx context.Context, msg *model.Message) error {
 			if len(appIds) == 0 {
 				return
 			}
-
-			isSubCall := false
+			isSubCall := true
 			if typeMessage.Cid().String() == msg.Msg.Cid().String() {
-				isSubCall = true
+				isSubCall = false
 			}
 			oneMsg := model.OneMessage{
 				Msg:       typeMessage,
@@ -166,9 +162,6 @@ func (sub *Subscriber) Notify(ctx context.Context, msg *model.Message) error {
 			pipe <- NewPackMsg(oneMsg, appIds)
 
 		}).Walk(func(item interface{}, pipe chan<- interface{}) {
-			if item == nil {
-				return
-			}
 			packMsg, ok := item.(PackMsg)
 			if !ok {
 				return
