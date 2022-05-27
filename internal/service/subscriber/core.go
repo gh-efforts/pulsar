@@ -27,8 +27,8 @@ const (
 )
 
 var (
-	ErrClosed  = errors.New("subscriber closed")
-	ErrCtxDone = errors.New("subscriber context done")
+	ErrClosed  = errors.New("subscriber core  closed")
+	ErrCtxDone = errors.New("MessageApplied context done")
 )
 
 type CoreOpt func(*Core)
@@ -76,6 +76,7 @@ func NewCore(sub *Subscriber, opts ...CoreOpt) *Core {
 	return core
 }
 
+//OverrideExecMonitor  Must be called from the server start to replace the default ExecMonitor!!!!!
 func (core *Core) OverrideExecMonitor(cs *store.ChainStore) *Core {
 	actor := actoraddress.NewActorAddress(cs)
 	core.sub.opts.actorAddress = actor

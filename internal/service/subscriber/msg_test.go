@@ -1,8 +1,9 @@
 package subscriber
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/filecoin-project/go-state-types/abi"
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -26,7 +27,7 @@ func Test_countMsg(t *testing.T) {
 		{
 			name: "countMsg0",
 			args: args{trace: types.ExecutionTrace{
-				Msg:      &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+				Msg:      &types.Message{To: t0123, From: t0123, Method: 1, Nonce: 1},
 				Subcalls: nil,
 			},
 			},
@@ -35,9 +36,9 @@ func Test_countMsg(t *testing.T) {
 		{
 			name: "countMsg1",
 			args: args{trace: types.ExecutionTrace{
-				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+				Msg: &types.Message{To: t0123, From: t0123, Method: 1, Nonce: 1},
 				Subcalls: []types.ExecutionTrace{
-					{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
+					{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 2, Nonce: 1}},
 				}},
 			},
 			want1: 2,
@@ -46,21 +47,22 @@ func Test_countMsg(t *testing.T) {
 		{
 			name: "countMsg3",
 			args: args{trace: types.ExecutionTrace{
+				Msg: &types.Message{To: t0123, From: t0123, Method: 1, Nonce: 1},
 				Subcalls: []types.ExecutionTrace{
 					{
-						Msg:      &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+						Msg:      &types.Message{To: t0123, From: t0123, Method: 2, Nonce: 1},
 						Subcalls: nil,
 					},
 					{
+						Msg: &types.Message{To: t0123, From: t0123, Method: 3, Nonce: 1},
 						Subcalls: []types.ExecutionTrace{
 							{
-								Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+								Msg:      &types.Message{To: t0123, From: t0123, Method: 4, Nonce: 1},
+								Subcalls: nil,
 							},
 						},
-						Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 					},
 				},
-				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 			},
 			},
 			want1: 4,
@@ -69,19 +71,36 @@ func Test_countMsg(t *testing.T) {
 		{
 			name: "countMsg5",
 			args: args{trace: types.ExecutionTrace{
+				Msg: &types.Message{To: t0123, From: t0123, Method: 1, Nonce: 1},
 				Subcalls: []types.ExecutionTrace{
-					{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-					{Subcalls: []types.ExecutionTrace{
-						{Subcalls: []types.ExecutionTrace{
-							{Subcalls: []types.ExecutionTrace{
-								{Subcalls: []types.ExecutionTrace{
-									{Subcalls: nil, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-								}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-							}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-						}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
-					}, Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1}},
+					{
+						Msg:      &types.Message{To: t0123, From: t0123, Method: 2, Nonce: 1},
+						Subcalls: nil,
+					},
+					{
+						Msg: &types.Message{To: t0123, From: t0123, Method: 3, Nonce: 1},
+						Subcalls: []types.ExecutionTrace{
+							{
+								Msg: &types.Message{To: t0123, From: t0123, Method: 4, Nonce: 1},
+								Subcalls: []types.ExecutionTrace{
+									{
+										Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
+										Subcalls: []types.ExecutionTrace{
+											{
+												Msg: &types.Message{To: t0123, From: t0123, Method: 6, Nonce: 1},
+												Subcalls: []types.ExecutionTrace{
+													{
+														Msg:      &types.Message{To: t0123, From: t0123, Method: 7, Nonce: 1},
+														Subcalls: nil,
+													},
+												}},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
-				Msg: &types.Message{To: t0123, From: t0123, Method: 5, Nonce: 1},
 			},
 			},
 			want1: 7,
@@ -90,11 +109,10 @@ func Test_countMsg(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got1, got2 := countMsg(tt.args.trace)
-			if len(got1) != got2 {
-				t.Errorf("countMsg() got1 = %v, want %v", got1, tt.want1)
+			assert.Equal(t, len(got1), got2, "countMsg() got1 = %v, want %v", got1, tt.want1)
+			for i := 0; i < len(got1); i++ {
+				assert.Equal(t, got1[i].Method, abi.MethodNum(i+1), "countMsg() got1[%d] = %v, want %v", i, got1[i].Method, abi.MethodNum(i+1))
 			}
-			assert.Equal(t, got2, tt.want1, fmt.Sprintf("countMsg() got = %v, want %v", got2, tt.want))
-
 		})
 	}
 }

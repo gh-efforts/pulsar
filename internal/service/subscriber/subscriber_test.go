@@ -179,7 +179,6 @@ func TestNewSub(t *testing.T) {
 }
 
 func TestSubscriber_AppendAppId_AND_RemoveAppID(t *testing.T) {
-	initAppIds := []string{"wq", "wq2"}
 	notify, err := NewNotify(nats.DefaultURL)
 	assert.Equal(t, err, nil)
 	sub, err := NewSub(initAppIds, notify, WithAddress(actoraddress.NewProxyActorAddress()))
@@ -275,7 +274,7 @@ func TestSubscriber_NotifyOnlySpecialAppId(t *testing.T) {
 	m := &MockNotify{}
 
 	// mark t0111 address  that means address is subscribed by some appIds
-	t111 := GenerateAddress("t0111") //nolint:errcheck
+	t111 := GenerateAddress("t0111")
 	markAddressList := map[string]struct{}{
 		t111.String(): {},
 	}
@@ -331,7 +330,7 @@ func TestSubscriber_NotifyOnlySpecialAppId(t *testing.T) {
 func TestSubscriber_NotifyMixedMode(t *testing.T) {
 	m := &MockNotify{}
 	// mark t0111 address  that means address is subscribed by some appIds
-	t111 := GenerateAddress("t0111") //nolint:errcheck
+	t111 := GenerateAddress("t0111")
 	markAddressList := map[string]struct{}{
 		t111.String(): {},
 	}
