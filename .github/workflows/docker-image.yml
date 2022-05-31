@@ -1,6 +1,7 @@
 name: Build nuwas Docker Image
 
 
+
 on:
   push:
     branches:
@@ -8,6 +9,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: bitrainforest/pulsar
+  BONY_CALIBNET_TARGET: calibnet
+  BONY_MAINNET_TARGET: mainnet
+
 jobs:
   build-push-docker:
     runs-on: ubuntu-latest
@@ -43,8 +47,37 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+
+      - name: Extract metadata for Docker (${{ env.BONY_MAINNET_TARGET }})
+        id: meta-for-mainnet
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push Docker image (${{ env.BONY_MAINNET_TARGET }})
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta-for-mainnet.outputs.tags }}
+          labels: ${{ steps.meta-for-mainnet.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BONY_NETWORK_TARGET=${{ env.BONY_MAINNET_TARGET }}
+            GO_BUILD_IMAGE=${{ env.GO_BUILD_IMAGE }}   
+
       # 根据输入自动生成 tag 和 label 等数据
-      - name: Extract metadata for Docker
+      - name: Extract metadata for Docker (${{ env.BONY_CALIBNET_TARGET }})
         id: meta
         uses: docker/metadata-action@v3
         with:
@@ -52,10 +85,18 @@ jobs:
           flavor: |
             latest=false
           tags: |
+            type=semver,pattern={{version}},suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=semver,pattern={{major}}.{{minor}},suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=semver,pattern={{major}}.{{minor}},suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=semver,pattern={{major}},suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=ref,event=branch,suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=ref,event=pr,suffix=-${{ env.BONY_CALIBNET_TARGET }}
+            type=semver,pattern={{version}},suffix=-${{ env.BONY_CALIBNET_TARGET }}
             type=raw,value=main-latest
+      
 
       # 构建并上传
-      - name: Build and push
+      - name: Build and push (${{ env.BONY_CALIBNET_TARGET }})
         uses: docker/build-push-action@v2
         with:
           context: .
