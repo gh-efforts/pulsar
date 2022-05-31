@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/appleboy/gin-jwt/v2 v2.8.0
-	github.com/bitrainforest/filmeta-hic v0.0.0-20220527091054-f40e398ade92
+	github.com/bitrainforest/filmeta-hic v0.0.0-20220531025955-df88a38119f4
 	github.com/filecoin-project/go-address v0.0.6
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0
 	github.com/filecoin-project/go-bitfield v0.2.4
