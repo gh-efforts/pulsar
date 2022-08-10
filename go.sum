@@ -134,10 +134,6 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bep/debounce v1.2.0 h1:wXds8Kq8qRfwAOpAxHrJDbCXgC5aHSzgQb/0gKsHQqo=
 github.com/bep/debounce v1.2.0/go.mod h1:H8yggRPQKLUhUoqrJC1bO2xNya7vanpDl7xR3ISbCJ0=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220527091054-f40e398ade92 h1:1eWRIgaNNZxefhr7iJv18YoBXwE6m1oh/yXQtuYMKYw=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220527091054-f40e398ade92/go.mod h1:GyOEHmy9x+x+kAZdf08uqZnpyhxJG3NBjamymeGw4qU=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220531023111-51b35a356f04 h1:ZUsk2jT0nb3WHCuLsqPqC9moqH42yQ9piknXsFnncu8=
-github.com/bitrainforest/filmeta-hic v0.0.0-20220531023111-51b35a356f04/go.mod h1:CPmhItw6NT5Kmmm+gt8GfaY96lBwJkmR7AhHY6zWi8E=
 github.com/bitrainforest/filmeta-hic v0.0.0-20220531025955-df88a38119f4 h1:KBW/k3AN17TJ0l/cwpcLCLByO95p02ITjOnbhbfduT4=
 github.com/bitrainforest/filmeta-hic v0.0.0-20220531025955-df88a38119f4/go.mod h1:CPmhItw6NT5Kmmm+gt8GfaY96lBwJkmR7AhHY6zWi8E=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=

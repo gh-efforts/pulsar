@@ -21,6 +21,7 @@ require (
 	github.com/filecoin-project/specs-actors/v5 v5.0.4
 	github.com/filecoin-project/specs-actors/v6 v6.0.1
 	github.com/filecoin-project/specs-actors/v7 v7.0.0
+	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-kratos/kratos/v2 v2.2.2
 	github.com/go-redis/redis/v8 v8.11.5
@@ -123,7 +124,6 @@ require (
 	github.com/gbrlsnchs/jwt/v3 v3.0.1 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gdamore/tcell/v2 v2.2.0 // indirect
-	github.com/gin-contrib/pprof v1.3.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect

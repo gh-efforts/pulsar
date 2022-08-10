@@ -49,3 +49,5 @@ EXPOSE 8078
 
 ENTRYPOINT ["/usr/bin/pulsar"]
 CMD ["--help"]
+
+# helper
