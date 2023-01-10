@@ -27,7 +27,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/wire v0.5.0
-	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-cid v0.2.0
 	github.com/ipfs/go-ipld-cbor v0.0.6
 	github.com/ipfs/go-log/v2 v2.5.0
 	github.com/ipfs/go-metrics-prometheus v0.0.2
@@ -199,8 +199,8 @@ require (
 	github.com/ipfs/interface-go-ipfs-core v0.5.2 // indirect
 	github.com/ipld/go-car v0.3.3 // indirect
 	github.com/ipld/go-car/v2 v2.1.1 // indirect
-	github.com/ipld/go-codec-dagpb v1.3.2 // indirect
-	github.com/ipld/go-ipld-prime v0.16.0 // indirect
+	github.com/ipld/go-codec-dagpb v1.5.0 // indirect
+	github.com/ipld/go-ipld-prime v0.18.0 // indirect
 	github.com/ipld/go-ipld-selector-text-lite v0.0.1 // indirect
 	github.com/ipsn/go-secp256k1 v0.0.0-20180726113642-9d62b9f0bc52 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -279,8 +279,8 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.0.3 // indirect
-	github.com/multiformats/go-multicodec v0.4.1 // indirect
-	github.com/multiformats/go-multihash v0.1.0 // indirect
+	github.com/multiformats/go-multicodec v0.5.0 // indirect
+	github.com/multiformats/go-multihash v0.2.0 // indirect
 	github.com/multiformats/go-multistream v0.2.2 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
@@ -341,7 +341,7 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
-	golang.org/x/crypto v0.0.0-20211209193657-4570a0811e8b // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/exp v0.0.0-20210715201039-d37aa40e8013 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
@@ -352,7 +352,7 @@ require (
 	golang.org/x/tools v0.1.7 // indirect
 	google.golang.org/genproto v0.0.0-20220504150022-98cd25cafc72 // indirect
 	google.golang.org/grpc v1.46.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
